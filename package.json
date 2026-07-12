@@ -1,0 +1,18 @@
+{
+  "name": "aegis-signal",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Aegis Signal — Crypto Market Intelligence Platform",
+  "scripts": {
+    "contracts": "pnpm --filter @aegis/contracts build",
+    "dev": "pnpm contracts && pnpm --filter @aegis/web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm contracts && pnpm -r typecheck",
+    "test": "pnpm contracts && pnpm -r test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.33.0"
+}

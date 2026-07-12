@@ -1,0 +1,29 @@
+{
+  "name": "@aegis/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The single definition of every Aegis Signal DTO, domain enum, and runtime schema. Imported by apps/web and apps/api; redeclared by neither.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "vitest": "^3.2.4"
+  }
+}

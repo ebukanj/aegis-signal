@@ -1,0 +1,196 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ------------------------------------------------------------------ */
+/* Aegis Signal design tokens — see docs/DESIGN_SYSTEM.md             */
+/* Dark is the default and reference theme.                            */
+/* ------------------------------------------------------------------ */
+
+:root {
+  --radius: 0.5rem;
+
+  /* Surfaces — soft cool gray canvas with white cards, never flat white */
+  --background: oklch(0.962 0.004 250);
+  --foreground: oklch(0.185 0.012 255);
+  --card: oklch(0.995 0.001 250);
+  --card-foreground: oklch(0.185 0.012 255);
+  --popover: oklch(0.995 0.001 250);
+  --popover-foreground: oklch(0.185 0.012 255);
+  --secondary: oklch(0.935 0.006 250);
+  --secondary-foreground: oklch(0.23 0.01 255);
+  --muted: oklch(0.93 0.006 250);
+  --muted-foreground: oklch(0.46 0.014 255);
+  --accent: oklch(0.925 0.008 250);
+  --accent-foreground: oklch(0.23 0.01 255);
+  --border: oklch(0.875 0.008 250);
+  --input: oklch(0.85 0.008 250);
+
+  /* Brand — deeper emerald for contrast on light surfaces */
+  --primary: oklch(0.545 0.135 163);
+  --primary-foreground: oklch(0.985 0.01 165);
+  --ring: oklch(0.545 0.135 163 / 55%);
+
+  /* Semantics */
+  --destructive: oklch(0.577 0.215 27);
+  --destructive-foreground: oklch(0.985 0.005 20);
+  --success: oklch(0.577 0.13 158);
+  --success-foreground: oklch(0.985 0.01 165);
+  --warning: oklch(0.666 0.145 75);
+  --warning-foreground: oklch(0.2 0.05 80);
+  --info: oklch(0.546 0.19 258);
+  --info-foreground: oklch(0.985 0.005 255);
+
+  /* Trading directions */
+  --long: oklch(0.577 0.13 158);
+  --short: oklch(0.577 0.215 27);
+
+  /* Charts */
+  --chart-1: oklch(0.6 0.13 163);
+  --chart-2: oklch(0.546 0.19 258);
+  --chart-3: oklch(0.666 0.145 75);
+  --chart-4: oklch(0.55 0.2 295);
+  --chart-5: oklch(0.6 0.2 5);
+
+  /* Sidebar — stays dark even in the light theme (brand decision):
+     the terminal rail anchors the product identity in both modes */
+  --sidebar: oklch(0.175 0.01 255);
+  --sidebar-foreground: oklch(0.82 0.008 250);
+  --sidebar-primary: oklch(0.7 0.145 163);
+  --sidebar-primary-foreground: oklch(0.17 0.03 166);
+  --sidebar-accent: oklch(0.24 0.012 255);
+  --sidebar-accent-foreground: oklch(0.95 0.005 250);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.7 0.145 163 / 45%);
+}
+
+.dark {
+  /* Surfaces — near-black background, dark-slate raised panels */
+  --background: oklch(0.145 0.007 255);
+  --foreground: oklch(0.93 0.005 250);
+  --card: oklch(0.185 0.009 255);
+  --card-foreground: oklch(0.93 0.005 250);
+  --popover: oklch(0.205 0.01 255);
+  --popover-foreground: oklch(0.93 0.005 250);
+  --secondary: oklch(0.235 0.01 255);
+  --secondary-foreground: oklch(0.9 0.005 250);
+  --muted: oklch(0.225 0.01 255);
+  --muted-foreground: oklch(0.68 0.012 252);
+  --accent: oklch(0.245 0.012 255);
+  --accent-foreground: oklch(0.93 0.005 250);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 13%);
+
+  /* Brand — emerald */
+  --primary: oklch(0.7 0.145 163);
+  --primary-foreground: oklch(0.17 0.03 166);
+  --ring: oklch(0.7 0.145 163 / 45%);
+
+  /* Semantics */
+  --destructive: oklch(0.63 0.2 26);
+  --destructive-foreground: oklch(0.97 0.01 20);
+  --success: oklch(0.7 0.145 160);
+  --success-foreground: oklch(0.17 0.03 166);
+  --warning: oklch(0.78 0.15 78);
+  --warning-foreground: oklch(0.2 0.05 80);
+  --info: oklch(0.65 0.16 255);
+  --info-foreground: oklch(0.15 0.03 255);
+
+  /* Trading directions */
+  --long: oklch(0.7 0.145 160);
+  --short: oklch(0.65 0.2 26);
+
+  /* Charts */
+  --chart-1: oklch(0.7 0.145 163);
+  --chart-2: oklch(0.65 0.16 255);
+  --chart-3: oklch(0.78 0.15 78);
+  --chart-4: oklch(0.62 0.19 295);
+  --chart-5: oklch(0.66 0.19 5);
+
+  /* Sidebar — one step below the background for a terminal rail feel */
+  --sidebar: oklch(0.165 0.008 255);
+  --sidebar-foreground: oklch(0.82 0.008 250);
+  --sidebar-primary: oklch(0.7 0.145 163);
+  --sidebar-primary-foreground: oklch(0.17 0.03 166);
+  --sidebar-accent: oklch(0.225 0.01 255);
+  --sidebar-accent-foreground: oklch(0.95 0.005 250);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.7 0.145 163 / 45%);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-long: var(--long);
+  --color-short: var(--short);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  ::selection {
+    @apply bg-primary/25;
+  }
+}
+
+@layer utilities {
+  /* Numeric data: monospaced, tabular — see DESIGN_SYSTEM.md §3 */
+  .font-numeric {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  /* Uppercase section label used across the terminal UI */
+  .label-caps {
+    @apply text-xs font-medium uppercase tracking-wider text-muted-foreground;
+  }
+}

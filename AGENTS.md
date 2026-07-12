@@ -1,0 +1,262 @@
+# AGENTS.md — The Aegis Signal Constitution
+
+**Project:** Aegis Signal — Crypto Market Intelligence Platform
+**Status:** Authoritative
+**Applies to:** every contributor, human or AI.
+
+> This file is the **single source of truth** for how Aegis Signal is built.
+> It is the one document you must read. It settles every conflict, and it
+> declares who owns every other decision.
+>
+> If this document contradicts any other document, **this document wins** —
+> and the other document is a defect that must be fixed in the same change.
+
+---
+
+## 1. The One Thing
+
+Aegis Signal exists to do exactly one thing:
+
+> **Tell the trader: here is a trade worth taking right now, here is exactly
+> how to take it, here is why, and here is what proves it wrong — and say
+> nothing at all when no such trade exists.**
+
+The single output of this platform is **the Signal**: a deterministic,
+risk-validated, explainable, executable trade instruction. Roughly **4–5 Prime
+signals per day** ([ADR-021](docs/adr/ADR-021-confluence-prime-signals-execution-guidance.md)).
+
+Everything else — the scanner, the dashboard, analytics, backtesting, paper
+trading, the AI layer, notifications, the admin console — exists for one
+reason only: **to make that single output trustworthy enough to act on.**
+
+**Silence is a feature.** A day with zero signals is a *successful* day if the
+rules produced zero. The Risk Engine's authority to kill a signal the
+strategies liked is not an obstacle to the product — it *is* the product.
+"Protect the Trader" is the half that earns the trust that makes "Measure the
+Market" worth anything.
+
+### The feature test
+Before building anything, answer this:
+
+> **Does this make the trade instruction more trustworthy, or does it just add
+> surface area?**
+
+If it only adds surface area, do not build it.
+
+---
+
+## 2. Ownership Map — One Owner Per Concept
+
+There is no global "source of truth" for *content*. There is **one authoritative
+owner per concept**, and this table is the authority that assigns them. Never
+duplicate a concept across two owners. If you need to know something, go to its
+owner — do not re-derive it, and do not copy it.
+
+| Concept | Single Owner | Everyone else must |
+|---|---|---|
+| **Why the platform exists / what a feature must earn** | This file, §1 | obey |
+| **How agents work, what "done" means, conflict resolution** | This file | obey |
+| **Product identity, philosophy, pillars** | [docs/01-PRODUCT_BIBLE.md](docs/01-PRODUCT_BIBLE.md) | cite |
+| **Non-negotiable principles (tiebreaker for values)** | [docs/02-FOUNDING_PRINCIPLES.md](docs/02-FOUNDING_PRINCIPLES.md) | obey |
+| **Engineering standards, Clean Architecture, DDD** | [docs/03-ENGINEERING_PHILOSOPHY.md](docs/03-ENGINEERING_PHILOSOPHY.md) | obey |
+| **Functional requirements, scope, roadmap** | [docs/04-PROJECT_PRD.md](docs/04-PROJECT_PRD.md) | cite |
+| **System design, modules, event flow** | [docs/05-SOLUTION_ARCHITECTURE.md](docs/05-SOLUTION_ARCHITECTURE.md) | cite |
+| **Strategy logic, entry/exit rules, expectancy** | [docs/06-STRATEGIES.md](docs/06-STRATEGIES.md) | implement, never invent |
+| **Architecture *decisions* and their rationale** | [docs/adr/](docs/adr/) | never silently reverse |
+| **UI tokens, spacing, color, component rules** | [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | obey |
+| **API contract / DTO shapes / domain enums** | `packages/contracts` (code) | import, never redeclare |
+| **Database schema** | `packages/database/prisma/schema.prisma` (code) | migrate, never hand-edit tables |
+| **Trade validation, `marketType`, `suggestedLeverage`, position sizing** | **The Risk Engine** (code) | consume its output, never compute your own |
+| **Confidence scores** | Confidence Engine, calibrated against the ledger | display, never fabricate |
+| **Backend obligations owed by frontend work** | [docs/BACKEND_NOTES.md](docs/BACKEND_NOTES.md) | append when you create one |
+
+**Conflict rule:** when two sources disagree, the owner in this table wins.
+When the *ownership itself* is unclear, **this file wins**, and you must update
+this table in the same change.
+
+---
+
+## 3. Required Reading Order
+
+Read in this order. Never skip the sequence.
+
+1. **AGENTS.md** (this file) — the constitution
+2. [docs/01-PRODUCT_BIBLE.md](docs/01-PRODUCT_BIBLE.md) — what we are building
+3. [docs/02-FOUNDING_PRINCIPLES.md](docs/02-FOUNDING_PRINCIPLES.md) — what we will not compromise
+4. [docs/03-ENGINEERING_PHILOSOPHY.md](docs/03-ENGINEERING_PHILOSOPHY.md) — how we build
+5. [docs/04-PROJECT_PRD.md](docs/04-PROJECT_PRD.md) — what it must do
+6. [docs/05-SOLUTION_ARCHITECTURE.md](docs/05-SOLUTION_ARCHITECTURE.md) — how it fits together
+7. [docs/06-STRATEGIES.md](docs/06-STRATEGIES.md) — the trading logic
+8. [docs/adr/](docs/adr/) — decisions already made (read before proposing a new one)
+
+---
+
+## 4. Current Reality — Read This Before You Believe Any Doc
+
+The docs describe the **target** system. This section describes the **actual**
+system. Keep it accurate; a stale reality section is a defect.
+
+| Area | Status |
+|---|---|
+| `apps/web` | **Built.** Next.js 15 frontend, all workspaces, currently rendering **mock data**. Typechecks, lints, and builds clean. |
+| `packages/contracts` | **Built and tested.** The one definition of every DTO and domain enum. |
+| `apps/api` | **Does not exist.** The backend has not been started. This is deliberate — see [ADR-022](docs/adr/ADR-022-contract-first-backend.md). |
+| `packages/database` | **Not built.** No Prisma schema yet. |
+| Market Intelligence / Strategy / Risk / Signal engines | **Not built.** No live market data flows anywhere. |
+| Backtesting / Paper Trading / Analytics / Notifications / AI | **Not built.** |
+
+**No strategy from [docs/06-STRATEGIES.md](docs/06-STRATEGIES.md) has been implemented, backtested, or
+validated. Every expectancy figure in that document is a hypothesis, not a
+result.** Do not describe this platform as producing signals until it does.
+
+---
+
+## 5. Architecture
+
+**Modular Monolith · Clean Architecture · Domain-Driven Design · Event-Driven ·
+Plugin Strategies · Dependency Injection · SOLID.**
+
+Dependencies point inward. The domain layer never imports Next.js, NestJS,
+Prisma, Redis, CCXT, or any exchange SDK. Frameworks are implementation
+details; business rules are permanent.
+
+### The Intelligence Pipeline — immutable
+```
+Market Data → Market Regime → Strategy Evaluation → Candidate Signal
+    → RISK VALIDATION → Confidence Scoring → Confluence → Prime Budget
+    → Signal Published → Notification / Analytics / Paper Trading
+```
+**No feature may bypass this pipeline. No signal may skip the Risk Engine.
+There are no exceptions to either rule.**
+
+### Repository structure
+```
+AGENTS.md            ← the constitution (root, so every agent finds it)
+README.md            ← public face
+
+apps/
+  web/               Next.js 15 frontend — renders, never decides   [EXISTS]
+  api/               NestJS backend — owns all business logic       [not started]
+
+packages/
+  contracts/         DTOs + domain enums + Zod schemas             [EXISTS]
+  database/          Prisma schema and client
+  shared/            Logger, config, utils, errors
+  core/              Domain primitives, indicators
+  market/  strategies/  risk/  signals/
+  analytics/  backtesting/  paper-trading/
+  notifications/  ai/  ui/
+
+docs/                All documentation (see §3)
+docker/  scripts/  tests/  .github/
+```
+This is the **target** structure. Only `apps/web` and `packages/contracts` exist
+today (§4). Create the rest as their phase arrives — never invent a different
+structure, and never create an empty package before it has work to do.
+
+---
+
+## 6. Boundaries — What Owns What
+
+**The frontend renders. It never decides.**
+`apps/web` owns UI, UX, charts, accessibility, responsive layout. It must
+never contain business logic: no signal generation, no risk math, no leverage
+calculation, no confidence scoring. If the frontend computes a number a trader
+acts on, that is an architecture violation.
+
+**The backend decides. It never renders.**
+`apps/api` owns strategies, risk, signals, analytics, notifications, the AI
+gateway. Controllers orchestrate only; logic lives in domain services.
+
+**The contract binds them.**
+`packages/contracts` is the *only* place a DTO or a domain enum is defined.
+Both apps import it. Neither redeclares it. A type hand-copied into `apps/web`
+is a defect — that is precisely the drift this package exists to prevent.
+
+Types are inferred from Zod schemas, so the compile-time type and the runtime
+validator cannot disagree. When `apps/api` ships, it must **validate every
+response against its schema before sending it**: a malformed signal fails in our
+logs, never on a trader's screen (Founding Principle 13 — Fail Safely).
+
+### Strategy rules
+Strategies are plugins. Each one must be deterministic, independently
+testable, independently configurable, and independently disableable.
+
+Strategies must **never**: send notifications · touch the database · call
+another strategy · bypass the Risk Engine · use randomness.
+
+Confluence between strategies happens **above** them, in the Signal
+Intelligence Engine — never between them ([ADR-021](docs/adr/ADR-021-confluence-prime-signals-execution-guidance.md)).
+
+### AI rules
+AI is a service layer outside the deterministic core.
+AI **may**: explain, summarize, compare, interpret news, generate reports.
+AI **may never**: change strategy output · override a risk decision · set
+leverage · invent market data · execute a trade.
+
+---
+
+## 7. Engineering Standards
+
+**Database** — Prisma only. Every schema change ships with a migration.
+**API** — REST for CRUD, WebSockets for real-time. Never expose ORM models; always DTOs from `packages/contracts`.
+**Logging** — never `console.log`. Structured logs for: errors, strategy execution, signal generation, risk rejections, notification failures, worker health.
+**Testing** — every feature ships with unit tests. Strategies additionally require backtests. No feature is complete without tests.
+**Security** — validate all input, encrypt secrets, RBAC, JWT, least privilege. Assume a hostile environment.
+**Config** — never hard-code ports, hosts, `localhost`, thresholds, or secrets. Everything from environment or admin config.
+**Commits** — Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).
+
+### Deployment
+Coolify (self-hosted) on a Hostinger VPS, Ubuntu LTS, Docker, Cloudflare DNS,
+GitHub → Coolify auto-deploy. **Never generate deployment instructions for
+Vercel, Railway, Render, or Netlify.**
+
+---
+
+## 8. How to Work
+
+1. Understand the requirement completely.
+2. Read the repository *before* creating anything — search for the existing
+   component, service, hook, type, or DTO. **Duplicate code is a defect.**
+3. Identify the impacted modules and the architectural implications.
+4. Write a short plan.
+5. Implement the smallest safe change. Never rewrite a module to fix a bug.
+6. Test.
+7. Update documentation **in the same change** — including §4 of this file if
+   reality moved.
+8. Self-review before presenting.
+
+### Definition of Done
+Requirements met · architecture preserved · types pass · lint passes · tests
+pass · docs updated · logging in place · errors handled · security reviewed ·
+no duplication.
+
+### Stop and ask when
+Requirements conflict · business rules are ambiguous · architecture would be
+violated · security would weaken · data loss is possible · multiple valid
+designs exist with real trade-offs.
+
+**Never make an important assumption silently. Never invent an API, a table,
+an endpoint, an env var, or a business rule. If you do not know, ask.**
+
+### Never
+Bypass the Risk Engine · put business logic in the UI · redeclare a contract
+type · hard-code config · silently reverse an ADR · claim something works
+without running it · overengineer.
+
+---
+
+## 9. Final Directive
+
+You are not a code generator. You are the engineering team responsible for
+Aegis Signal.
+
+The platform is worth more than any strategy in it. Strategies come and go;
+the platform remains. When forced to choose between shipping fast and
+protecting the architecture, **protect the architecture** — and when forced to
+choose between showing a trader a mediocre signal and showing them nothing,
+**show them nothing.**
+
+Every decision must answer one question:
+
+> **Will this make the trade instruction more trustworthy five years from now?**
