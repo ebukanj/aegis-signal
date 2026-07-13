@@ -1,5 +1,4 @@
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Layers, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import type { QueueStatus } from "../types";
 

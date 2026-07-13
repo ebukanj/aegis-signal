@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Shield, ShieldAlert, ShieldCheck, KeyRound, Smartphone, Laptop } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Smartphone, Laptop } from "lucide-react";
 import type { SecuritySettings } from "../types";
 
 export function SecuritySettingsView({ security }: { security: SecuritySettings }) {

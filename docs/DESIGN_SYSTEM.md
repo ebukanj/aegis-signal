@@ -1,8 +1,9 @@
 # Aegis Signal — Design System
 
-**Version:** 1.0 (Phase 1 — Foundation)
+**Version:** 2.0 (Production polish)
 **Owner:** Frontend (`apps/web`)
-**Related:** [PROJECT_PRD.md §9](../PROJECT_PRD.md), [PRODUCT_BIBLE.md §10](../PRODUCT_BIBLE.md)
+**Governed by:** [AGENTS.md](../AGENTS.md)
+**Related:** [04-PROJECT_PRD.md §9](04-PROJECT_PRD.md), [01-PRODUCT_BIBLE.md §10](01-PRODUCT_BIBLE.md)
 
 > Every screen answers one question. Every color communicates meaning. Every number is readable.
 
@@ -10,11 +11,25 @@
 
 ## 1. Principles
 
-1. **Dark-first.** Dark is the default and reference theme. A light theme exists as a token-level variant, never as an afterthought override.
-2. **Color is semantic.** No decorative colors. Emerald = brand/primary action, green = positive/long, red = negative/short/error, amber = warning, blue = information.
-3. **Numbers are first-class.** All prices, percentages, and metrics render in a monospaced face with tabular numerals so columns align like a terminal.
-4. **Density with hierarchy.** High information density is achieved through spacing, weight, and type scale — never through more colors or boxes.
-5. **Motion is purposeful.** Fast (≤200ms), subtle, and only where it clarifies state change.
+1. **Dark-first.** Dark is the default and reference theme. Light is a token-level peer, never an afterthought override.
+2. **Neutrals are tinted, never grey.** Every neutral carries chroma (0.015–0.03) toward a cool slate-blue. A grey with no colour in it reads as *paper*, and paper does not feel like a trading terminal. This is the single change that took the light theme from "whitish" to a product.
+3. **Color is semantic.** No decorative colors. Emerald = brand/primary action, green = positive/long, red = negative/short/error, amber = warning, blue = information.
+4. **Numbers are first-class.** All prices, percentages, and metrics render in a monospaced face with tabular numerals so columns align like a terminal.
+5. **Density with hierarchy.** High information density comes from spacing, weight, and type scale — never from more colors or boxes.
+6. **Motion is purposeful.** Fast (≤200ms), subtle, and only where it clarifies a state change. `prefers-reduced-motion` collapses it globally.
+
+---
+
+## 1a. The mark
+
+`components/layout/aegis-mark.tsx` — drawn, not borrowed. It carries the product's
+two ideas in one shape:
+
+- **The shield** — protection. The Risk Engine's veto; the thing that says no.
+- **The signal** — a pulse rising *through* it and breaking its upper edge.
+
+The order is the argument: the platform protects first, then speaks. A generic
+shield icon says "security product"; this says what Aegis actually does.
 
 ---
 

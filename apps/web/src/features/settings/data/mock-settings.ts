@@ -1,4 +1,3 @@
-import { createSeededRandom, pick, randInt } from "@/lib/seeded-random";
 import type { 
   UserProfile, 
   AppearanceSettings, 
@@ -13,7 +12,6 @@ import type {
 } from "../types";
 
 export function generateMockSettings() {
-  const rand = createSeededRandom(4567);
   const now = Math.floor(Date.now() / 1000);
 
   const profile: UserProfile = {

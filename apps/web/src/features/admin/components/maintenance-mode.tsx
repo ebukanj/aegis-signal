@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, HardHat, ShieldAlert } from "lucide-react";
+import { HardHat, ShieldAlert } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 export function MaintenanceMode() {

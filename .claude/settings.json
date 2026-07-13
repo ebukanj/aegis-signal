@@ -83,7 +83,14 @@
       "Bash(cd \"c:/Users/HP/Desktop/We Projects/Aegis-Signal/apps/web\" && npx eslint . 2>&1 | tail -2; echo \"── build ──\"; npx next build > /tmp/ib.log 2>&1; echo \"EXIT: $?\"; grep -E \"insights|signals|Compiled|Failed\" /tmp/ib.log | head -6)",
       "Bash(sed -i 's|require\\(\"./packages/contracts/dist/index.js\"\\)|require\\(\"C:/Users/HP/Desktop/We Projects/Aegis-Signal/packages/contracts/dist/index.js\"\\)|' /tmp/vs.js)",
       "Bash(node /tmp/vs.js)",
-      "Bash(cd \"c:/Users/HP/Desktop/We Projects/Aegis-Signal/apps/web\" && grep -A5 \"Error occurred prerendering\" /tmp/nb.log | head -8; echo \"═══ mock-ledger seed keys ═══\"; grep -nE \"^  \\\\\"?[a-z-]+\\\\\"?: \\\\{\" src/features/analytics/data/mock-ledger.ts)"
+      "Bash(cd \"c:/Users/HP/Desktop/We Projects/Aegis-Signal/apps/web\" && grep -A5 \"Error occurred prerendering\" /tmp/nb.log | head -8; echo \"═══ mock-ledger seed keys ═══\"; grep -nE \"^  \\\\\"?[a-z-]+\\\\\"?: \\\\{\" src/features/analytics/data/mock-ledger.ts)",
+      "Bash(awk '/^C:/{f=$0} /no-unused-vars|no-img-element/{print f\" ::: \"$0}')",
+      "Bash(mkdir -p \"app/\\(platform\\)/track-record\")",
+      "Bash(git mv *)",
+      "Bash(mv \"app/\\(platform\\)/analytics/page.tsx\" \"app/\\(platform\\)/track-record/page.tsx\")",
+      "Bash(rmdir \"app/\\(platform\\)/analytics\")",
+      "Bash(sed -i 's|href: \"/analytics\"|href: \"/track-record\"|' config/navigation.ts)",
+      "Bash(awk '{print $2}')"
     ]
   }
 }

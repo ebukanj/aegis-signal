@@ -2,6 +2,8 @@
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { OfflineBanner } from "@/components/layout/offline-banner";
+import { SkipToContent } from "@/components/layout/skip-to-content";
 import { Topbar } from "@/components/layout/topbar";
 import { useUiStore } from "@/stores/ui-store";
 
@@ -21,11 +23,19 @@ export default function PlatformLayout({
       open={!sidebarCollapsed}
       onOpenChange={(open) => setSidebarCollapsed(!open)}
     >
+      <SkipToContent />
       <AppSidebar />
       {/* min-w-0 lets inner tables scroll in place instead of widening the page */}
       <SidebarInset className="min-w-0 overflow-x-clip">
+        <OfflineBanner />
         <Topbar />
-        <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="min-w-0 flex-1 p-4 md:p-6"
+        >
+          {children}
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );

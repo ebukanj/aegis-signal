@@ -3,8 +3,7 @@
 import { useNotificationStore } from "../stores/notification-store";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Send, Smartphone, Mail, Globe } from "lucide-react";
-import type { ChannelType } from "../types";
+import { Send, Mail, Globe } from "lucide-react";
 
 export function NotificationPreview() {
   const { previewChannel, setPreviewChannel } = useNotificationStore();

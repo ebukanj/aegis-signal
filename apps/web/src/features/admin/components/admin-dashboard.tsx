@@ -1,5 +1,5 @@
 import { MetricCard } from "@/components/shared/metric-card";
-import { Users, Activity, Layers, ArrowRightLeft, HeartPulse, Clock, Cpu, HardDrive, Bell } from "lucide-react";
+import { Users, Activity, Layers, ArrowRightLeft, HeartPulse, Clock, Cpu, Bell } from "lucide-react";
 import type { AdminDashboardMetrics } from "../types";
 
 export function AdminDashboard({ metrics }: { metrics: AdminDashboardMetrics }) {

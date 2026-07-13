@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,13 @@ export function ProfileSettings({ profile }: { profile: UserProfile }) {
         <div className="flex items-center gap-6">
           <div className="size-20 rounded-full bg-muted flex items-center justify-center shrink-0 border">
             {profile.avatarUrl ? (
-              <img src={profile.avatarUrl} alt="Avatar" className="size-full rounded-full object-cover" />
+              <Image
+                src={profile.avatarUrl}
+                alt=""
+                width={80}
+                height={80}
+                className="size-full rounded-full object-cover"
+              />
             ) : (
               <UserCircle className="size-10 text-muted-foreground" />
             )}

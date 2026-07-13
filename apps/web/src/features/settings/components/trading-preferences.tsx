@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Target, TrendingUp, RefreshCw } from "lucide-react";
+import { Target, RefreshCw } from "lucide-react";
 import type { TradingPreferences } from "../types";
 
 export function TradingPreferencesView({ prefs }: { prefs: TradingPreferences }) {

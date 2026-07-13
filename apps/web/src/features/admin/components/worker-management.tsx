@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Cpu, MoreHorizontal, Power, RefreshCcw } from "lucide-react";
+import { Cpu, Power, RefreshCcw } from "lucide-react";
 import type { WorkerNode } from "../types";
 
 export function WorkerManagement({ workers }: { workers: WorkerNode[] }) {

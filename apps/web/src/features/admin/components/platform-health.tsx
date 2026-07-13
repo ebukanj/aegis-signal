@@ -1,5 +1,4 @@
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Activity, Database, Server, RefreshCw, Layers, ArrowRightLeft, Bell, Bot, HardDrive } from "lucide-react";
 import type { PlatformHealth, HealthStatus } from "../types";
 

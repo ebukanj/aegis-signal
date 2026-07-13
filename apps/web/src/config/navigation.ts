@@ -75,7 +75,7 @@ export const navigation: NavSection[] = [
       },
       {
         title: "Track Record",
-        href: "/analytics",
+        href: "/track-record",
         icon: LineChart,
         description: "Have these signals actually made money",
       },
