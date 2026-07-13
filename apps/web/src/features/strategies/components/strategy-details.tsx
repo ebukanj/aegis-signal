@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, History, Star, Wallet } from "lucide-react";
+import { ArrowLeft, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -75,16 +75,6 @@ export function StrategyDetails({ strategy, onBack }: StrategyDetailsProps) {
               }
             >
               <Star /> Favorite
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/backtesting">
-                <History /> Backtest
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/paper-trading">
-                <Wallet /> Paper trade
-              </Link>
             </Button>
           </div>
         </div>

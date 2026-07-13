@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { DashboardGrid } from "@/features/dashboard/components/dashboard-grid";
+import { StaggeredRows } from "@/components/shared/staggered-rows";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared/error-state";
 import {
@@ -60,7 +60,7 @@ export function AnalyticsCenterContent() {
   }
 
   return (
-    <DashboardGrid>
+    <StaggeredRows>
       {/* Header */}
       <AnalyticsHeader />
 
@@ -138,6 +138,6 @@ export function AnalyticsCenterContent() {
         insights={insights}
         loading={insightsLoading}
       />
-    </DashboardGrid>
+    </StaggeredRows>
   );
 }

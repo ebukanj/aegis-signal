@@ -4,11 +4,11 @@ import { Children, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 /**
- * Dashboard row stack with a fast, subtle entrance stagger.
- * Each direct child is one dashboard row; rows lay out their own columns
- * with a 12-column grid. Respects prefers-reduced-motion.
+ * Vertical row stack with a fast, subtle entrance stagger.
+ * Each direct child is one row; rows lay out their own columns.
+ * Respects prefers-reduced-motion.
  */
-export function DashboardGrid({ children }: { children: ReactNode }) {
+export function StaggeredRows({ children }: { children: ReactNode }) {
   const reducedMotion = useReducedMotion();
 
   return (

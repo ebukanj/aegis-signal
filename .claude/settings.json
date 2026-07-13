@@ -60,7 +60,19 @@
       "Bash(grep -v \"does not exist\\\\|not started\\\\|NOT created\\\\|when the backend\\\\|arrive with the backend\\\\|is built\\\\|ADR-022\\\\|apps/api\\\\` and\")",
       "Bash(curl -s -o /dev/null http://127.0.0.1:3000/dashboard)",
       "Bash(git add *)",
-      "Bash(git commit -q -m ' *)"
+      "Bash(git commit -q -m ' *)",
+      "Bash(git config *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(gh auth *)",
+      "Bash(gh --version)",
+      "PowerShell(git push -u origin main)",
+      "Bash(pkill -f \"git.*push\")",
+      "Bash(pkill -f \"git-credential-manager\")",
+      "Bash(git branch *)",
+      "Bash(git ls-remote *)",
+      "Bash(git rm *)",
+      "Bash(echo \"exit=$? \\(blank above = clean\\)\")"
     ]
   }
 }

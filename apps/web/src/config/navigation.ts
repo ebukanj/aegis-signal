@@ -1,11 +1,8 @@
 import {
-  LayoutDashboard,
-  Radar,
   Zap,
+  Radar,
   FlaskConical,
-  BarChart3,
-  History,
-  Wallet,
+  LineChart,
   Bell,
   Settings,
   ShieldCheck,
@@ -26,59 +23,54 @@ export interface NavSection {
 }
 
 /**
- * Primary workspace navigation.
- * Mirrors the ten product workspaces defined in PROJECT_PRD.md §16.
+ * Primary navigation.
+ *
+ * Five workspaces, not ten. Aegis Signal does exactly one thing — hand the
+ * trader the few trades worth taking today (AGENTS.md §1) — and every screen
+ * here earns its place against that:
+ *
+ *   Signals      the product itself
+ *   Scanner      proof the machine looked, and why most things were rejected
+ *   Strategies   the rules, in plain English, yours to edit
+ *   Track Record did our signals actually make money
+ *   Settings     alerts and preferences
+ *
+ * Backtesting, Paper Trading and the Dashboard were removed (ADR-023):
+ * the first two are jobs traders do better in TradingView or on a live
+ * exchange, and the third was a page that summarised other pages.
  */
 export const navigation: NavSection[] = [
   {
-    label: "Intelligence",
+    label: "Trade",
     items: [
       {
-        title: "Dashboard",
-        href: "/dashboard",
-        icon: LayoutDashboard,
-        description: "What is happening right now",
+        title: "Signals",
+        href: "/signals",
+        icon: Zap,
+        description: "What should I trade today",
       },
       {
         title: "Market Scanner",
         href: "/scanner",
         icon: Radar,
-        description: "What opportunities exist",
-      },
-      {
-        title: "Signals",
-        href: "/signals",
-        icon: Zap,
-        description: "Why each opportunity matters",
+        description: "What the scan found — and what it rejected",
       },
     ],
   },
   {
-    label: "Laboratory",
+    label: "Rules",
     items: [
       {
         title: "Strategies",
         href: "/strategies",
         icon: FlaskConical,
-        description: "How each strategy is performing",
+        description: "The rules that produce signals",
       },
       {
-        title: "Analytics",
+        title: "Track Record",
         href: "/analytics",
-        icon: BarChart3,
-        description: "What the platform has learned",
-      },
-      {
-        title: "Backtesting",
-        href: "/backtesting",
-        icon: History,
-        description: "Does this strategy actually work",
-      },
-      {
-        title: "Paper Trading",
-        href: "/paper-trading",
-        icon: Wallet,
-        description: "Can this strategy be trusted",
+        icon: LineChart,
+        description: "Have these signals actually made money",
       },
     ],
   },
@@ -89,19 +81,19 @@ export const navigation: NavSection[] = [
         title: "Notifications",
         href: "/notifications",
         icon: Bell,
-        description: "Alert channels and preferences",
+        description: "Where Prime signals get delivered",
+      },
+      {
+        title: "Settings",
+        href: "/settings",
+        icon: Settings,
+        description: "Preferences and exchanges",
       },
       {
         title: "Administration",
         href: "/admin",
         icon: ShieldCheck,
         description: "Platform management",
-      },
-      {
-        title: "Settings",
-        href: "/settings",
-        icon: Settings,
-        description: "User preferences",
       },
     ],
   },

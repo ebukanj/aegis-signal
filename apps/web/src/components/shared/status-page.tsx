@@ -39,7 +39,7 @@ export function StatusPage({
         </div>
         {action ?? (
           <Button asChild variant="outline">
-            <Link href="/dashboard">Back to dashboard</Link>
+            <Link href="/signals">Back to signals</Link>
           </Button>
         )}
       </div>

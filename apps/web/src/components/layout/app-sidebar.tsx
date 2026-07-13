@@ -30,7 +30,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="h-14 justify-center border-b border-sidebar-border px-3 group-data-[collapsible=icon]:px-2">
-        <Link href="/dashboard" aria-label="Aegis Signal — Dashboard">
+        <Link href="/signals" aria-label="Aegis Signal — Signals">
           <Brand className="group-data-[collapsible=icon]:hidden" />
           <Brand markOnly className="hidden group-data-[collapsible=icon]:flex" />
         </Link>
