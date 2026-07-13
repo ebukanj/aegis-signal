@@ -2,6 +2,8 @@ import {
   getMockAICommentary,
   getMockSignalDetail,
 } from "@/features/signals/data/mock-signal-details";
+import { getMockTodaysSignals } from "@/features/signals/data/mock-today";
+import type { TodaysSignals } from "@/features/signals/data/mock-today";
 import type {
   AICommentary,
   SignalDetailResponse,
@@ -25,6 +27,10 @@ export class SignalNotFoundError extends Error {
 }
 
 export const signalsApi = {
+  /** The home page's only question: what should I trade today? */
+  getTodaysSignals: (): Promise<TodaysSignals> =>
+    simulate(getMockTodaysSignals(), 500),
+
   getSignalDetail: async (id: string): Promise<SignalDetailResponse> => {
     const response = getMockSignalDetail(id);
     if (!response) {

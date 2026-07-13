@@ -77,7 +77,8 @@
       "Bash(sed -i 's|import type { StrategyMarket } from \"@/constants/strategies\";|import type { MarketType as StrategyMarket } from \"@/types/domain\";|' features/strategies/types.ts)",
       "Bash(sed -i 's|const profile = mockStrategies.find\\(\\(s\\) => s.id === slug\\);|const profile = mockStrategies.find\\(\\(s\\) => s.slug === slug\\);|' features/strategies/data/mock-strategies.ts)",
       "Bash(echo \"── exit=$? \\(blank = clean\\) ──\")",
-      "Bash(python -)"
+      "Bash(python -)",
+      "Bash(node -e ' *)"
     ]
   }
 }

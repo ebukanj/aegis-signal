@@ -1,16 +1,11 @@
 import type { Metadata } from "next";
-import { Zap } from "lucide-react";
-import { WorkspacePlaceholder } from "@/components/layout/workspace-placeholder";
+import { SignalsWorkspace } from "@/features/signals/components/signals-workspace";
 
-export const metadata: Metadata = { title: "Signals" };
+export const metadata: Metadata = {
+  title: "Signals",
+  description: "What should I trade today?",
+};
 
 export default function SignalsPage() {
-  return (
-    <WorkspacePlaceholder
-      icon={Zap}
-      title="Signals"
-      question="Why should I care?"
-      phase="Phase 4"
-    />
-  );
+  return <SignalsWorkspace />;
 }
