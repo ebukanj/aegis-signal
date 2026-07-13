@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PowerOff } from "lucide-react";
+import { PowerOff, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,7 +27,8 @@ export function SignalsWorkspace() {
 
   // Reads the strategy store: a strategy you switched off cannot produce a
   // signal, cannot be a confluence partner, and cannot reach Prime (ADR-024).
-  const { data, isPending, isError, refetch } = useTodaysSignals();
+  // Also applies the Risk Flag veto — a hacked coin is untouchable.
+  const { data, isPending, isError, refetch, blockedCoins } = useTodaysSignals();
 
   if (isPending) return <LoadingState />;
 
@@ -51,6 +52,31 @@ export function SignalsWorkspace() {
       />
 
       <MarketContextStrip context={context} primeCount={prime.length} />
+
+      {/* A coin does not silently vanish. If the Risk Engine vetoed it, say so. */}
+      {blockedCoins.size > 0 && (
+        <div className="flex gap-2 rounded-lg border border-destructive/40 bg-destructive/[0.04] px-4 py-3">
+          <ShieldAlert
+            className="mt-0.5 size-4 shrink-0 text-destructive"
+            aria-hidden
+          />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            <span className="font-medium text-destructive">
+              {[...blockedCoins].join(", ")}{" "}
+              {blockedCoins.size === 1 ? "is" : "are"} blocked.
+            </span>{" "}
+            No strategy may trade{" "}
+            {blockedCoins.size === 1 ? "it" : "them"} right now, however good the
+            setup looks.{" "}
+            <Link
+              href="/insights"
+              className="font-medium text-foreground underline underline-offset-2"
+            >
+              See why
+            </Link>
+          </p>
+        </div>
+      )}
 
       {context.strategiesActive === 0 ? (
         <NoStrategiesEnabled />

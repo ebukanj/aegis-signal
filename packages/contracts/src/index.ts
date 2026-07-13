@@ -17,4 +17,5 @@ export * from "./strategy";
 export * from "./strategy-language";
 export * from "./signal";
 export * from "./scanner";
+export * from "./insight";
 export * from "./dashboard";

@@ -79,7 +79,8 @@
       "Bash(echo \"── exit=$? \\(blank = clean\\) ──\")",
       "Bash(python -)",
       "Bash(node -e ' *)",
-      "Bash(pkill -f \"next dev\")"
+      "Bash(pkill -f \"next dev\")",
+      "Bash(cd \"c:/Users/HP/Desktop/We Projects/Aegis-Signal/apps/web\" && npx eslint . 2>&1 | tail -2; echo \"── build ──\"; npx next build > /tmp/ib.log 2>&1; echo \"EXIT: $?\"; grep -E \"insights|signals|Compiled|Failed\" /tmp/ib.log | head -6)"
     ]
   }
 }

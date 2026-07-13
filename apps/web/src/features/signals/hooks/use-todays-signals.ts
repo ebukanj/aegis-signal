@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { isProven } from "@aegis/contracts";
+import { insightsApi } from "@/features/insights/api/insights-api";
 import { signalsApi } from "@/features/signals/api/signals-api";
 import { useStrategyStore } from "@/features/strategies/stores/strategy-store";
 import type { TodaysSignals } from "@/features/signals/data/mock-today";
@@ -42,6 +43,23 @@ export function useTodaysSignals() {
     queryFn: () => signalsApi.getTodaysSignals(),
   });
 
+  /**
+   * The veto (ADR-023 §5). A coin that was just exploited or depegged is
+   * untouchable — no strategy gets an opinion on an asset that is actively
+   * bleeding, however good the chart looks. This is not a filter the user can
+   * turn off; it is the Risk Engine protecting them.
+   */
+  const flags = useQuery({
+    queryKey: ["insights", "feed"],
+    queryFn: () => insightsApi.getFeed(),
+    select: (feed) => feed.riskFlags,
+  });
+
+  const blockedCoins = useMemo(
+    () => new Set((flags.data ?? []).map((f) => f.coin)),
+    [flags.data],
+  );
+
   const enabledNames = useMemo(
     () => new Set(strategies.filter((s) => s.enabled).map((s) => s.name)),
     [strategies],
@@ -63,6 +81,8 @@ export function useTodaysSignals() {
 
     const apply = (signals: TodaysSignals["prime"]) =>
       signals
+        // The veto comes first. A flagged coin is untouchable, full stop.
+        .filter((signal) => !blockedCoins.has(signal.coin))
         // Keep only the contributors the user actually trusts.
         .map((signal) => ({
           ...signal,
@@ -95,7 +115,7 @@ export function useTodaysSignals() {
       prime: prime.filter((s) => s.isPrime),
       validated: [...demoted, ...validated],
     };
-  }, [query.data, enabledNames, primeEligibleNames]);
+  }, [query.data, enabledNames, primeEligibleNames, blockedCoins]);
 
-  return { ...query, data };
+  return { ...query, data, blockedCoins };
 }
