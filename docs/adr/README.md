@@ -148,6 +148,7 @@ that contradicts the constitution must either be rejected, or accepted
 - **[ADR-021](ADR-021-confluence-prime-signals-execution-guidance.md)** — Confluence Signals, Prime Signal Budget, Execution Guidance
 - **[ADR-022](ADR-022-contract-first-backend.md)** — Frontend-First Sequencing and the Contract-First Backend
 - **[ADR-023](ADR-023-strategy-as-document.md)** — Decongestion: Strategy as Document; Backtesting, Paper Trading and Dashboard removed
+- **[ADR-024](ADR-024-earned-confidence-and-the-pattern-vocabulary.md)** — Earned Confidence, the Indicator & Pattern Vocabulary, Inert Disabled Strategies *(plan — not yet implemented)*
 
 ## Initial ADR Roadmap
 The following Architecture Decision Records should exist before backend development completes.
