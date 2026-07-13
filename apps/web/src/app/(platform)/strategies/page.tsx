@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
-import { StrategyLabPage } from "@/features/strategies/components/strategy-lab-page";
+import { StrategiesPage } from "@/features/strategies/components/strategies-page";
 
-export const metadata: Metadata = { title: "Strategy Laboratory" };
+export const metadata: Metadata = {
+  title: "Strategies",
+  description: "The rules that produce your signals.",
+};
 
 export default function Page() {
-  return <StrategyLabPage />;
+  return <StrategiesPage />;
 }
