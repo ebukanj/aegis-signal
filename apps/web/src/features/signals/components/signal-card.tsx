@@ -62,6 +62,11 @@ export function SignalCard({
           {signal.pair}
         </span>
         <DirectionBadge direction={signal.direction} />
+        {/* The timeframe is what tells you whether this is a scalp or a swing —
+            the same strategy on the 15m and the 4h are different trades. */}
+        <span className="rounded-md border px-1.5 py-0.5 font-numeric text-[10px] text-muted-foreground">
+          {signal.timeframe}
+        </span>
         <span className="text-xs text-muted-foreground">{signal.exchange}</span>
 
         <div className="ml-auto flex items-center gap-2">

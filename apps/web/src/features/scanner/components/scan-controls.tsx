@@ -114,6 +114,32 @@ export function ScanControls({
           </Select>
         </div>
 
+        {/* Signals are multi-timeframe. The same rule on the 15m and the 4h are
+            different trades with different holding periods — a scalper and a
+            swing trader use the same strategies for different purposes. */}
+        <div className="space-y-1.5">
+          <Label htmlFor="scan-timeframe" className="text-xs">
+            Timeframe
+          </Label>
+          <Select
+            value={request.timeframe}
+            onValueChange={(v: ScanRequest["timeframe"]) =>
+              onChange({ ...request, timeframe: v })
+            }
+          >
+            <SelectTrigger id="scan-timeframe" className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Any timeframe</SelectItem>
+              <SelectItem value="15m">15m — scalps</SelectItem>
+              <SelectItem value="1h">1h — intraday</SelectItem>
+              <SelectItem value="4h">4h — swing</SelectItem>
+              <SelectItem value="1d">1d — position</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="space-y-1.5">
           <Label htmlFor="scan-exchange" className="text-xs">
             Exchange

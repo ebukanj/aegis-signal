@@ -96,6 +96,7 @@ export function ScanResults({
                   <TableHead className="w-12">#</TableHead>
                   <TableHead>Pair</TableHead>
                   <TableHead>Side</TableHead>
+                  <TableHead>Timeframe</TableHead>
                   <TableHead>Found by</TableHead>
                   <TableHead className="text-right">Entry</TableHead>
                   <TableHead className="text-right">Stop</TableHead>
@@ -121,6 +122,9 @@ export function ScanResults({
                     </TableCell>
                     <TableCell>
                       <DirectionBadge direction={signal.direction} />
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap font-numeric text-xs text-muted-foreground">
+                      {signal.timeframe}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                       {signal.strategies.join(" + ")}

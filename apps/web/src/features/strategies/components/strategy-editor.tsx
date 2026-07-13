@@ -1,17 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, TriangleAlert } from "lucide-react";
-import {
-  describeCondition,
-  strategyDefinitionSchema,
-} from "@aegis/contracts";
-import type {
-  Condition,
-  Indicator,
-  Operator,
-  StrategyDefinition,
-} from "@aegis/contracts";
+import { Plus, TriangleAlert } from "lucide-react";
+import { strategyDefinitionSchema } from "@aegis/contracts";
+import type { Condition, StrategyDefinition } from "@aegis/contracts";
 import {
   Sheet,
   SheetContent,
@@ -30,54 +22,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { ConditionRow } from "@/features/strategies/components/condition-row";
 
 /**
  * The strategy builder.
  *
  * A user authors a strategy by *filling in a form*, never by writing code
- * (ADR-023). The closed vocabulary below is what makes that safe: every
- * strategy anyone can express is deterministic by construction, so there is no
- * sandbox to escape and no arbitrary code to execute — and the backend runs a
- * user's rule through exactly the same evaluator as a built-in one.
+ * (ADR-023). The closed vocabulary is what makes that safe: every strategy
+ * anyone can express is deterministic by construction, so there is no sandbox
+ * to escape — and the backend runs a user's rule through exactly the same
+ * evaluator as a built-in one.
  *
  * Every edit is validated against the contract schema before it can be saved,
  * so an impossible strategy (a SHORT on spot, targets closing 140% of the
- * position, a leverage cap on a spot rule) cannot be created at all.
+ * position, leverage on a spot rule) cannot be created at all.
  */
-
-const INDICATORS: { value: Indicator; label: string }[] = [
-  { value: "close", label: "Price" },
-  { value: "high", label: "High" },
-  { value: "low", label: "Low" },
-  { value: "volume", label: "Volume" },
-  { value: "volume_sma", label: "Average volume" },
-  { value: "ema", label: "EMA" },
-  { value: "sma", label: "Simple moving average" },
-  { value: "rsi", label: "RSI" },
-  { value: "adx", label: "ADX (trend strength)" },
-  { value: "atr", label: "ATR (volatility)" },
-  { value: "bb_upper", label: "Upper Bollinger Band" },
-  { value: "bb_lower", label: "Lower Bollinger Band" },
-  { value: "highest_high", label: "Highest high" },
-  { value: "lowest_low", label: "Lowest low" },
-  { value: "zscore", label: "Z-score" },
-  { value: "funding_rate", label: "Funding rate" },
-  { value: "open_interest", label: "Open interest" },
-];
-
-const OPERATORS: { value: Operator; label: string }[] = [
-  { value: "gt", label: "is above" },
-  { value: "gte", label: "is at least" },
-  { value: "lt", label: "is below" },
-  { value: "lte", label: "is at most" },
-  { value: "crosses_above", label: "crosses above" },
-  { value: "crosses_below", label: "crosses below" },
-];
-
-const NEEDS_PERIOD = new Set<Indicator>([
-  "ema", "sma", "rsi", "adx", "atr", "bb_upper", "bb_lower",
-  "highest_high", "lowest_low", "zscore", "volume_sma",
-]);
 
 function blankCondition(): Condition {
   return {
@@ -100,14 +59,10 @@ export function StrategyEditor({
     <Sheet open={strategy !== null} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
         side="right"
-        className="w-full gap-0 overflow-y-auto sm:max-w-xl"
+        className="w-full gap-0 overflow-y-auto sm:max-w-2xl"
       >
         {strategy && (
-          <EditorBody
-            key={strategy.id}
-            strategy={strategy}
-            onSave={onSave}
-          />
+          <EditorBody key={strategy.id} strategy={strategy} onSave={onSave} />
         )}
       </SheetContent>
     </Sheet>
@@ -127,11 +82,19 @@ function EditorBody({
   const patch = (changes: Partial<StrategyDefinition>) =>
     setDraft((d) => ({ ...d, ...changes }) as StrategyDefinition);
 
-  const setCondition = (index: number, condition: Condition) =>
+  const setEntry = (index: number, condition: Condition) =>
     setDraft((d) => ({
       ...d,
       entry: d.entry.map((c, i) => (i === index ? condition : c)),
     }));
+
+  const setFilter = (index: number, condition: Condition) =>
+    setDraft((d) => ({
+      ...d,
+      filters: d.filters.map((c, i) => (i === index ? condition : c)),
+    }));
+
+  const isNew = strategy.name === "";
 
   const save = () => {
     // The contract is the gate. An impossible strategy cannot be saved.
@@ -147,18 +110,14 @@ function EditorBody({
   return (
     <>
       <SheetHeader className="border-b pr-12">
-        <SheetTitle>
-          {strategy.origin === "CUSTOM" && strategy.entry.length === 1
-            ? "New strategy"
-            : `Edit ${strategy.name}`}
-        </SheetTitle>
+        <SheetTitle>{isNew ? "New strategy" : `Edit ${strategy.name}`}</SheetTitle>
         <SheetDescription>
           Build the rule by filling this in. No code — and anything you can
           express here, the platform can run.
         </SheetDescription>
       </SheetHeader>
 
-      <div className="space-y-5 p-4">
+      <div className="space-y-6 p-4">
         {/* Identity */}
         <div className="space-y-3">
           <div className="space-y-1.5">
@@ -223,7 +182,7 @@ function EditorBody({
             </Select>
           </Field>
 
-          <Field label="Timeframe">
+          <Field label="Main timeframe">
             <Select
               value={draft.timeframe}
               onValueChange={(v: StrategyDefinition["timeframe"]) =>
@@ -245,17 +204,22 @@ function EditorBody({
         </div>
 
         {/* Entry conditions */}
-        <div className="space-y-2">
+        <section className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Enter when ALL of these are true</Label>
+            <div>
+              <Label>Enter when ALL of these are true</Label>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Each condition can read a different timeframe — that is how a{" "}
+                {draft.timeframe} rule asks &ldquo;but is the 4h trend
+                up?&rdquo;
+              </p>
+            </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                patch({ entry: [...draft.entry, blankCondition()] })
-              }
+              onClick={() => patch({ entry: [...draft.entry, blankCondition()] })}
             >
-              <Plus /> Add condition
+              <Plus /> Add
             </Button>
           </div>
 
@@ -264,7 +228,8 @@ function EditorBody({
               <ConditionRow
                 key={index}
                 condition={condition}
-                onChange={(c) => setCondition(index, c)}
+                strategyTimeframe={draft.timeframe}
+                onChange={(c) => setEntry(index, c)}
                 onRemove={
                   draft.entry.length > 1
                     ? () =>
@@ -276,7 +241,46 @@ function EditorBody({
               />
             ))}
           </div>
-        </div>
+        </section>
+
+        {/* Filters */}
+        <section className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Only if… (optional)</Label>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Extra gates — usually a higher-timeframe check.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                patch({ filters: [...draft.filters, blankCondition()] })
+              }
+            >
+              <Plus /> Add
+            </Button>
+          </div>
+
+          {draft.filters.length > 0 && (
+            <div className="space-y-2">
+              {draft.filters.map((condition, index) => (
+                <ConditionRow
+                  key={index}
+                  condition={condition}
+                  strategyTimeframe={draft.timeframe}
+                  onChange={(c) => setFilter(index, c)}
+                  onRemove={() =>
+                    patch({
+                      filters: draft.filters.filter((_, i) => i !== index),
+                    })
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </section>
 
         {/* Risk */}
         <div className="grid grid-cols-2 gap-3">
@@ -287,9 +291,7 @@ function EditorBody({
               max={5}
               step={0.25}
               value={draft.riskPercent}
-              onChange={(e) =>
-                patch({ riskPercent: Number(e.target.value) })
-              }
+              onChange={(e) => patch({ riskPercent: Number(e.target.value) })}
               className="font-numeric"
             />
           </Field>
@@ -301,9 +303,7 @@ function EditorBody({
                 min={1}
                 max={25}
                 value={draft.maxLeverage ?? 3}
-                onChange={(e) =>
-                  patch({ maxLeverage: Number(e.target.value) })
-                }
+                onChange={(e) => patch({ maxLeverage: Number(e.target.value) })}
                 className="font-numeric"
               />
             </Field>
@@ -343,121 +343,6 @@ function EditorBody({
         </Button>
       </div>
     </>
-  );
-}
-
-function ConditionRow({
-  condition,
-  onChange,
-  onRemove,
-}: {
-  condition: Condition;
-  onChange: (condition: Condition) => void;
-  onRemove?: () => void;
-}) {
-  const left = condition.left;
-  const right = condition.right;
-
-  const leftIndicator =
-    left.kind === "indicator" ? left.indicator : "close";
-  const leftPeriod = left.kind === "indicator" ? left.period : undefined;
-
-  return (
-    <div className="space-y-2 rounded-md border p-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <Select
-          value={leftIndicator}
-          onValueChange={(v: Indicator) =>
-            onChange({
-              ...condition,
-              left: {
-                kind: "indicator",
-                indicator: v,
-                period: NEEDS_PERIOD.has(v) ? (leftPeriod ?? 14) : undefined,
-              },
-            })
-          }
-        >
-          <SelectTrigger className="w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {INDICATORS.map((i) => (
-              <SelectItem key={i.value} value={i.value}>
-                {i.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {NEEDS_PERIOD.has(leftIndicator) && (
-          <Input
-            type="number"
-            min={1}
-            value={leftPeriod ?? 14}
-            onChange={(e) =>
-              onChange({
-                ...condition,
-                left: {
-                  kind: "indicator",
-                  indicator: leftIndicator,
-                  period: Math.max(1, Number(e.target.value)),
-                },
-              })
-            }
-            className="w-20 font-numeric"
-            aria-label="Period"
-          />
-        )}
-
-        <Select
-          value={condition.op}
-          onValueChange={(v: Operator) => onChange({ ...condition, op: v })}
-        >
-          <SelectTrigger className="w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {OPERATORS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Input
-          type="number"
-          step="any"
-          value={right.kind === "number" ? right.value : 0}
-          onChange={(e) =>
-            onChange({
-              ...condition,
-              right: { kind: "number", value: Number(e.target.value) },
-            })
-          }
-          className="w-24 font-numeric"
-          aria-label="Value"
-        />
-
-        {onRemove && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onRemove}
-            aria-label="Remove condition"
-            className="ml-auto text-muted-foreground hover:text-destructive"
-          >
-            <Trash2 />
-          </Button>
-        )}
-      </div>
-
-      {/* The rule, read back in plain English — the same renderer the card uses */}
-      <p className="text-xs text-muted-foreground">
-        {describeCondition(condition)}
-      </p>
-    </div>
   );
 }
 

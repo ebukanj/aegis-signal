@@ -29,6 +29,7 @@ export function ScannerPage() {
     strategies: BUILT_IN_STRATEGIES.filter((s) => s.enabled).map((s) => s.name),
     market: "ALL",
     exchange: "ALL",
+    timeframe: "ALL",
   });
 
   const [result, setResult] = useState<ScanResult | null>(null);

@@ -1,6 +1,7 @@
 import { createSeededRandom, pick, randInt } from "@/lib/seeded-random";
 import { mockOpportunities } from "@/features/scanner/data/mock-opportunities";
 import type { Opportunity } from "@/features/scanner/types";
+import type { Timeframe } from "@/types/domain";
 
 /**
  * The Scanner is a TOOL, not a feed.
@@ -60,6 +61,13 @@ export interface ScanRequest {
   strategies: string[];
   market: "ALL" | "SPOT" | "PERPETUAL";
   exchange: string;
+  /**
+   * Signals are multi-timeframe: the same strategy can fire on the 15m and the
+   * 4h, and they are different trades with different holding periods. "ALL"
+   * scans every timeframe the selected strategies support; narrowing it is how
+   * a scalper and a swing trader use the same rules for different purposes.
+   */
+  timeframe: Timeframe | "ALL";
 }
 
 export interface ScanResult {
@@ -129,7 +137,10 @@ function pickGate(r: () => number): RejectionGate {
  * is reproducible while the backend does not exist.
  */
 export function runMockScan(request: ScanRequest): ScanResult {
-  const seed = request.strategies.join("").length * 977 + request.market.length;
+  const seed =
+    request.strategies.join("").length * 977 +
+    request.market.length +
+    request.timeframe.length;
   const rand = createSeededRandom(seed);
 
   const ranked = mockOpportunities
@@ -137,6 +148,9 @@ export function runMockScan(request: ScanRequest): ScanResult {
     .filter((o) => request.strategies.some((s) => o.strategies.includes(s)))
     .filter((o) => request.market === "ALL" || o.marketType === request.market)
     .filter((o) => request.exchange === "ALL" || o.exchange === request.exchange)
+    .filter(
+      (o) => request.timeframe === "ALL" || o.timeframe === request.timeframe,
+    )
     .sort((a, b) => b.confidence - a.confidence || b.rewardRisk - a.rewardRisk)
     .slice(0, 10)
     .map((o, i) => ({ ...o, rank: i + 1 }));
