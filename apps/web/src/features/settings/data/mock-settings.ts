@@ -47,7 +47,7 @@ export function generateMockSettings() {
     defaultTimeframe: "1H",
     defaultMarket: "BTC/USDT",
     defaultRiskPct: 2.5,
-    preferredStrategy: "Momentum Ignition",
+    preferredStrategy: "Breakout",
     defaultPositionSize: 10000,
     preferredMarketRegime: "Trending Volatile",
     autoRefresh: true,

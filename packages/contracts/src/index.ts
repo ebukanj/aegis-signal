@@ -12,6 +12,8 @@
 
 export * from "./domain";
 export * from "./invariants";
+export * from "./strategy";
+export * from "./strategy-language";
 export * from "./signal";
 export * from "./scanner";
 export * from "./dashboard";

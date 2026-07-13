@@ -49,7 +49,7 @@ export function generateMockNotifications(): {
   // 3. History
   const history: NotificationHistoryItem[] = [];
   const coins = ["BTC", "ETH", "SOL", "AVAX", "LINK"];
-  const strategies = ["Momentum Ignition", "Mean Reversion", "Volatility Breakout"];
+  const strategies = ["Breakout", "Mean Reversion", "Volatility Breakout"];
   
   const itemTypes: HistoryItemType[] = ["NEW_SIGNAL", "TAKE_PROFIT", "STOP_LOSS", "RISK_WARNING", "SYSTEM"];
   const priorities: AlertPriority[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];

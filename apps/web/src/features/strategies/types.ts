@@ -1,5 +1,5 @@
 import type { AreaChartPoint } from "@/components/shared/charts/area-chart";
-import type { StrategyMarket } from "@/constants/strategies";
+import type { MarketType as StrategyMarket } from "@/types/domain";
 import type { MarketRegime, RiskLevel, Timeframe } from "@/types/domain";
 
 /**
@@ -70,8 +70,8 @@ export interface StrategyAIInsight {
 export interface StrategyProfile {
   slug: string;
   name: string;
-  className: string;
   market: StrategyMarket;
+  /** The one-sentence plain-English summary. Replaces the old `className`. */
   description: string;
   version: string;
   status: StrategyStatus;

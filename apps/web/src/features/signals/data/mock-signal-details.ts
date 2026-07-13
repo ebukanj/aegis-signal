@@ -33,118 +33,84 @@ const clamp = (v: number, min: number, max: number) =>
   Math.min(max, Math.max(min, v));
 
 /**
- * Plain-language narratives per strategy (real roster from strategies.md) —
- * no jargon without explanation.
+ * Plain-language narratives, one per strategy (the five in
+ * constants/strategies.ts). No jargon without an explanation.
  */
 const STRATEGY_NARRATIVES: Record<
   string,
   (opp: Opportunity) => StrategyExplanationContent
 > = {
-  Ignition: (opp) => ({
-    summary: `${opp.pair} spent days coiling inside an unusually tight range — Bollinger Band width in the lowest 20% of its recent history — and then closed ${opp.direction === "LONG" ? "above" : "below"} the 20-bar range boundary on volume 1.5× its average. Ignition trades exactly this: the expansion leg that follows a volatility squeeze, confirmed by close and volume, never by a wick.`,
+  Breakout: (opp) => ({
+    summary: `${opp.pair} spent days coiling inside an unusually tight range, then closed ${opp.direction === "LONG" ? "above" : "below"} the 20-bar boundary on volume 1.5× its average. Breakout trades exactly this: the expansion leg that follows a squeeze — confirmed by a close and by volume, never by a wick.`,
     conditions: [
-      "Volatility squeeze: Bollinger Band width in the lowest 20th percentile of the last 120 bars",
-      `A full candle CLOSE ${opp.direction === "LONG" ? "above" : "below"} the 20-bar range boundary (wick breaks don't count)`,
+      "Price closed beyond the 20-bar range boundary (wick breaks do not count)",
       "Breakout candle volume ≥ 1.5× its 20-period average — real participation",
       `RSI in the momentum band (${opp.direction === "LONG" ? "55–75" : "25–45"}) — moving, not blown off`,
     ],
     filters: [
-      "Higher-timeframe trend alignment: price on the right side of the 200 EMA on 4H",
-      "Funding filter passed — the breakout side is not already crowded",
+      "Higher-timeframe trend agrees: price on the right side of the 4h 200 EMA",
+      "Trend strength (4h ADX) above threshold — not a dead range",
       "Liquidity gate: 24h volume ≥ $50M and spread ≤ 0.05%",
     ],
     confirmations: [
-      "Open interest rising on the breakout bar — new money, not short-covering only",
+      "Open interest rising on the breakout bar — new money, not short-covering",
       "No major higher-timeframe level within one ATR of entry",
     ],
   }),
-  Tidewater: (opp) => ({
-    summary: `${opp.coin} is in a confirmed daily uptrend — the moving-average stack is fanned bullish (21 > 55 > 200 EMA) — and just completed an orderly pullback on fading volume into the buy zone. Tidewater accumulates market leaders during these pullbacks and only exits on structural trend failure. Spot only: no leverage, no liquidation risk.`,
+  "Trend Pullback": (opp) => ({
+    summary: `${opp.coin} is in a confirmed uptrend and just finished an orderly dip on fading volume. Trend Pullback joins strength rather than chasing it, and exits only when the trend structure actually breaks. Spot only: no leverage, no liquidation risk.`,
     conditions: [
-      "Daily close above the 200 EMA for at least 5 consecutive days",
-      "EMA stack fanned bullish: 21 > 55 > 200 on the daily",
-      `${opp.coin}'s 30-day return is beating BTC — buying leaders, not laggards`,
-      "Pullback reached the EMA(21)–EMA(55) zone, then momentum turned back up",
+      "Daily EMA stack is bullish (21 above 200) and price is above the 200 EMA",
+      "Price pulled back into the EMA(21) zone",
+      "Momentum turned back up: RSI crossed back above 50",
     ],
     filters: [
       "BTC regime filter passed — BTC itself is above its daily 200 EMA",
       "No token unlock or emission event within 14 days",
     ],
     confirmations: [
-      "Pullback happened on declining volume — distribution, not selling pressure",
-      "Weekly close also holds above the weekly EMA(21)",
+      "The pullback happened on declining volume — profit-taking, not distribution",
+      "Weekly close still holds above the weekly EMA(21)",
     ],
   }),
-  "Rubber Band": (opp) => ({
-    summary: `${opp.pair} stretched more than two standard deviations from its mean inside a confirmed ranging regime — and stopped making progress. Rubber Band fades these statistical overextensions back toward the mean, precisely in the conditions where breakout strategies are switched off.`,
+  Reversal: (opp) => ({
+    summary: `${opp.pair} stretched more than two standard deviations from its mean inside a confirmed range — and then stopped going. Reversal fades that overextension back toward the average, precisely in the conditions where Breakout is switched off.`,
     conditions: [
-      "Ranging regime confirmed — trend strength (ADX) below threshold",
-      "Price extended ≥ 2 standard deviations from its short-term mean",
-      "Extension stalled: no new extreme for several closed bars",
+      "Price pushed beyond the lower Bollinger Band (20)",
+      "Z-score at or beyond −2.2 — a statistical stretch, not ordinary noise",
+      "Momentum hooked back: RSI crossed back above 30",
     ],
     filters: [
-      "Regime filter passed — Ignition-class breakout modules are suppressed here",
+      "Ranging regime confirmed (4h ADX below 20) — Breakout is suppressed here",
       "Liquidity and spread gates passed",
     ],
     confirmations: [
-      "Momentum divergence at the extreme (price pushed, oscillator refused)",
+      "Momentum divergence at the extreme — price pushed, the oscillator refused",
       "Volume climax on the final push — exhaustion, not initiative",
     ],
   }),
-  Sniper: (opp) => ({
-    summary: `The level mapper flagged a high-quality ${opp.direction === "LONG" ? "support" : "resistance"} zone on ${opp.pair} — tested repeatedly, never broken cleanly — and the 15-minute chart just printed a reaction at it. Sniper takes small, fast, tightly-stopped scalps off these mapped levels; the edge is precision, not prediction.`,
+  "Level Bounce": (opp) => ({
+    summary: `A ${opp.direction === "LONG" ? "support" : "resistance"} level on ${opp.pair} has been tested repeatedly and never broken cleanly — and the 15-minute chart just reacted at it again. Level Bounce takes small, tightly-stopped trades off proven levels. The edge is precision, not prediction.`,
     conditions: [
-      "Algorithmically mapped S/R level with multiple historical reactions",
-      "15-minute reaction candle at the level with above-average volume",
-      "Tight, defined invalidation just beyond the level",
+      "Price tagged a level that has held multiple times before",
+      "It closed back on the correct side of that level — rejection, not a break",
+      "Reaction candle volume ≥ 1.3× average — the level was defended",
     ],
     filters: [
-      "Session filter passed — liquidity is active enough for scalp execution",
-      "Spread gate passed — critical at scalp target sizes",
+      "The 1h trend agrees with the direction — never catch a falling knife",
+      "Spread gate passed — critical at these small target sizes",
     ],
     confirmations: [
-      "Order-flow shifted at the level in the trade direction",
-      "No imminent higher-timeframe level conflicting with the target path",
+      "Order flow shifted at the level in the trade direction",
+      "The next level is far enough away to leave room for the target",
     ],
   }),
-  Oracle: (opp) => ({
-    summary: `Oracle detected an information edge on ${opp.coin} — unusual social momentum, news flow, and on-chain activity that the price hasn't fully absorbed — and the mandatory technical gate confirmed the direction. Oracle never trades narrative alone: sentiment finds the candidate, the chart must agree.`,
-    conditions: [
-      "Composite information score crossed its trigger threshold",
-      "Signal source is broad-based (not a single amplified account)",
-      "Technical confirmation gate passed on the trading timeframe",
-    ],
-    filters: [
-      "Risk-flag feed clear — no hack, depeg, exploit, or regulatory action on this asset",
-      "Liquidity gate passed — the story is tradeable, not just loud",
-    ],
-    confirmations: [
-      "Developer/on-chain activity corroborates the social signal",
-      "Price structure supports the narrative direction",
-    ],
-  }),
-  Flush: (opp) => ({
-    summary: `A forced-liquidation cascade just ripped through ${opp.pair}, leaving a violent wick built by liquidation engines — not by traders with conviction. Flush trades the snap-back once the forced flow is exhausted: a mechanical edge, because liquidation engines don't have opinions.`,
-    conditions: [
-      "Liquidation spike far above baseline on the cascade candle",
-      "Price wick disproportionate to the actual traded volume outside the cascade",
-      "Reclaim: price closed back inside the pre-cascade zone",
-    ],
-    filters: [
-      "No fundamental catalyst explains the move (news filter clear)",
-      "Liquidity recovered — order book depth restored after the flush",
-    ],
-    confirmations: [
-      "Open interest reset sharply — the crowded side was cleared out",
-      "Funding normalized after the cascade",
-    ],
-  }),
-  "Crowded Boat": (opp) => ({
-    summary: `The crowd is heavily ${opp.direction === "LONG" ? "short" : "long"} ${opp.pair} — funding is at an extreme, open interest is bloated — yet price has stopped rewarding them. Crowded Boat positions against extreme positioning: when everyone is on one side of the boat, their stops and liquidations become fuel for the move against them.`,
+  "Crowd Squeeze": (opp) => ({
+    summary: `The crowd is heavily ${opp.direction === "LONG" ? "short" : "long"} ${opp.pair} — funding is extreme, open interest is bloated — and yet price has stopped rewarding them. When everyone is on one side of the boat, their stops become fuel for the move against them.`,
     conditions: [
       "Funding rate beyond its extreme percentile for this market",
-      "Open interest elevated well above its recent baseline",
-      "Price stopped progressing in the crowd's direction for a sustained window",
+      "Open interest at a 30-period high — leverage is stacked up",
+      "Price stopped progressing in the crowd's direction, then broke the EMA(21)",
     ],
     filters: [
       "No event (unlock, listing, verdict) that would justify the positioning",
@@ -152,39 +118,7 @@ const STRATEGY_NARRATIVES: Record<
     ],
     confirmations: [
       "Long/short account ratio confirms the crowding",
-      "Early squeeze behavior: small counter-moves triggering outsized reactions",
-    ],
-  }),
-  Relay: (opp) => ({
-    summary: `Relay's relative-strength ranking rotated capital into ${opp.coin}: it is outperforming the majors on the ranking window while the dominance regime favors this rotation. Relay manages where capital sits — historically a bigger driver of long-run P&L than any single entry trigger. Spot only.`,
-    conditions: [
-      `${opp.coin} ranks in the top of the relative-strength table this cycle`,
-      "Dominance regime supports rotating into this asset class",
-      "Rotation trigger confirmed on the ranking timeframe",
-    ],
-    filters: [
-      "BTC regime filter passed — rotations suspend in risk-off conditions",
-      "Liquidity gate passed for both legs of the rotation",
-    ],
-    confirmations: [
-      "Ratio chart broke structure in the target's favor",
-      "Strength is persistent across multiple ranking windows, not a one-day pop",
-    ],
-  }),
-  Killzone: (opp) => ({
-    summary: `${opp.pair} swept the ${opp.direction === "LONG" ? "low" : "high"} of the Asian-session range right at the session open — a classic liquidity grab — then reclaimed the range. Killzone trades this most repeatable time-based pattern in crypto: the false break of the overnight range before the true directional move.`,
-    conditions: [
-      "Asian session built a well-defined range",
-      `Session open swept the range ${opp.direction === "LONG" ? "low" : "high"} and closed back inside (sweep-reversal setup)`,
-      "Reclaim candle closed with conviction (body ≥ 60% of its range)",
-    ],
-    filters: [
-      "No tier-1 macro event within the execution window",
-      "Spread and liquidity gates passed at session-open conditions",
-    ],
-    confirmations: [
-      "Volume expanded on the reclaim, not on the sweep",
-      "Higher-timeframe bias agrees with the post-sweep direction",
+      "Small counter-moves are already triggering outsized reactions",
     ],
   }),
 };

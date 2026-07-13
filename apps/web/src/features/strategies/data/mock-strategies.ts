@@ -1,4 +1,4 @@
-import { STRATEGY_ROSTER } from "@/constants/strategies";
+import { BUILT_IN_STRATEGIES } from "@/constants/strategies";
 import { createSeededRandom, pick, randInt } from "@/lib/seeded-random";
 import type { MarketRegime, Timeframe } from "@/types/domain";
 import {
@@ -29,96 +29,47 @@ const PROFILE_SEEDS: Record<
     status?: StrategyStatus;
   }
 > = {
-  ignition: {
+  breakout: {
     timeframes: ["1h", "4h"],
     compat: { Breakout: 92, "High Volatility": 78, "Bull Market": 74, "Sideways Market": 22 },
     regimes: ["TRENDING_BULL", "TRENDING_BEAR", "HIGH_VOLATILITY"],
     frequency: 9,
   },
-  tidewater: {
+  "trend-pullback": {
     timeframes: ["4h", "1d"],
     compat: { "Bull Market": 95, "Low Volatility": 70, "Bear Market": 8, "Sideways Market": 35 },
     regimes: ["TRENDING_BULL"],
     frequency: 1.5,
   },
-  "rubber-band": {
+  reversal: {
     timeframes: ["1h", "4h"],
-    compat: { "Sideways Market": 90, "Mean Reversion": 94, "Bull Market": 45, Breakout: 15 },
-    regimes: ["RANGE"],
+    compat: { "Sideways Market": 92, "Low Volatility": 74, Breakout: 20, "Bull Market": 28 },
+    regimes: ["RANGE", "TRANSITION"],
     frequency: 6,
   },
-  sniper: {
+  "level-bounce": {
     timeframes: ["15m"],
-    compat: { "Sideways Market": 72, "Mean Reversion": 76, "High Volatility": 55, "Low Volatility": 60 },
+    compat: { "Sideways Market": 78, "Low Volatility": 66, "High Volatility": 48, Breakout: 52 },
     regimes: ["RANGE", "TRANSITION"],
     frequency: 18,
   },
-  oracle: {
+  "crowd-squeeze": {
     timeframes: ["4h", "1d"],
-    compat: { "Bull Market": 80, Breakout: 70, "Bear Market": 50, "High Volatility": 62 },
-    regimes: ["TRENDING_BULL", "TRANSITION"],
-    frequency: 3,
-  },
-  flush: {
-    timeframes: ["15m", "1h"],
-    compat: { "High Volatility": 93, "Mean Reversion": 82, "Low Volatility": 12 },
-    regimes: ["HIGH_VOLATILITY", "RISK_OFF"],
-    frequency: 2.5,
-  },
-  "crowded-boat": {
-    timeframes: ["4h", "1d"],
-    compat: { "Sideways Market": 70, "Mean Reversion": 78, "High Volatility": 66, "Bull Market": 48 },
+    compat: { "High Volatility": 70, "Sideways Market": 72, "Bear Market": 50, "Bull Market": 42 },
     regimes: ["RANGE", "TRANSITION", "HIGH_VOLATILITY"],
     frequency: 1.8,
-  },
-  relay: {
-    timeframes: ["1d"],
-    compat: { "Bull Market": 88, "Sideways Market": 55, "Bear Market": 30, "Low Volatility": 65 },
-    regimes: ["TRENDING_BULL", "RANGE"],
-    frequency: 1.2,
-  },
-  harvest: {
-    timeframes: ["1d"],
-    compat: { "Sideways Market": 85, "Low Volatility": 80, "Bull Market": 75, "High Volatility": 40 },
-    regimes: ["RANGE", "TRENDING_BULL"],
-    frequency: 0.8,
-    status: "ACTIVE",
-  },
-  killzone: {
-    timeframes: ["15m", "1h"],
-    compat: { "High Volatility": 70, "Sideways Market": 66, Breakout: 62, "Low Volatility": 45 },
-    regimes: ["RANGE", "HIGH_VOLATILITY", "TRANSITION"],
-    frequency: 7,
-    status: "PROBATION",
-  },
-  chameleon: {
-    timeframes: ["4h", "1d"],
-    compat: {
-      "Bull Market": 85,
-      "Bear Market": 80,
-      "Sideways Market": 82,
-      "High Volatility": 78,
-      "Low Volatility": 75,
-      Breakout: 80,
-      "Mean Reversion": 80,
-    },
-    regimes: [
-      "TRENDING_BULL",
-      "TRENDING_BEAR",
-      "RANGE",
-      "TRANSITION",
-      "HIGH_VOLATILITY",
-      "RISK_OFF",
-    ],
-    frequency: 4,
+    status: "DISABLED",
   },
 };
 
 const MONTHS = ["Feb", "Mar", "Apr", "May", "Jun", "Jul"];
 
 function buildProfile(slug: string): StrategyProfile {
-  const identity = STRATEGY_ROSTER.find((s) => s.slug === slug)!;
+  const identity = BUILT_IN_STRATEGIES.find((s) => s.id === slug)!;
   const seedData = PROFILE_SEEDS[slug];
+  if (!identity || !seedData) {
+    throw new Error(`No strategy seed for "${slug}" — strategies.ts and PROFILE_SEEDS have drifted.`);
+  }
   const rand = createSeededRandom(
     slug.split("").reduce((acc, ch) => acc + ch.charCodeAt(0) * 31, 7),
   );
@@ -185,9 +136,8 @@ function buildProfile(slug: string): StrategyProfile {
   return {
     slug,
     name: identity.name,
-    className: identity.className,
     market: identity.market,
-    description: identity.objective,
+    description: identity.summary,
     version: `1.${randInt(rand, 0, 4)}.${randInt(rand, 0, 9)}`,
     status,
     health: {
@@ -257,8 +207,8 @@ function buildProfile(slug: string): StrategyProfile {
   };
 }
 
-export const mockStrategies: StrategyProfile[] = STRATEGY_ROSTER.map((s) =>
-  buildProfile(s.slug),
+export const mockStrategies: StrategyProfile[] = BUILT_IN_STRATEGIES.map((s) =>
+  buildProfile(s.id),
 );
 
 export function buildAIInsight(slug: string): StrategyAIInsight | null {
@@ -273,7 +223,7 @@ export function buildAIInsight(slug: string): StrategyAIInsight | null {
   )[0][0];
 
   return {
-    summary: `${profile.name} (${profile.className.toLowerCase()}) has closed ${profile.historical.totalSignals} signals over the tracked window with a ${profile.winRate}% win rate and ${profile.expectancy >= 0 ? "positive" : "negative"} expectancy of ${profile.expectancy}R. Its edge concentrates in ${topDims.join(" and ")} conditions; the health monitor currently rates it ${profile.health.score}/100 (${profile.health.trend.toLowerCase()}).`,
+    summary: `${profile.name} (${profile.market.toLowerCase()}) has closed ${profile.historical.totalSignals} signals over the tracked window with a ${profile.winRate}% win rate and ${profile.expectancy >= 0 ? "positive" : "negative"} expectancy of ${profile.expectancy}R. Its edge concentrates in ${topDims.join(" and ")} conditions; the health monitor currently rates it ${profile.health.score}/100 (${profile.health.trend.toLowerCase()}).`,
     strengths: [
       `Strong fit for ${topDims[0]} conditions (${Math.max(...Object.values(profile.compatibility))}/100 compatibility)`,
       `Average winner of ${profile.avgReturnR}R against a strictly capped 1R loss`,

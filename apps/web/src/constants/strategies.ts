@@ -1,140 +1,278 @@
+import type { StrategyDefinition } from "@aegis/contracts";
+
 /**
- * The official strategy roster — single source of truth for strategy
- * identity across the frontend. Derived from `strategies.md` (Strategy
- * Module Specifications v1.0); the backend strategy plugins must register
- * with these exact slugs.
+ * The five built-in strategies, as documents.
+ *
+ * These are seeds, not code (ADR-023). Each one is an ordinary
+ * `StrategyDefinition` — exactly the same shape a user produces in the
+ * strategy builder — so the backend evaluates all of them, built-in and
+ * custom alike, with a single evaluator.
+ *
+ * Names are plain trader English. The old codenames (Ignition, Tidewater,
+ * Rubber Band, Sniper, Crowded Boat, Killzone, Flush) told a trader nothing
+ * about what the rule actually looks for.
+ *
+ * `record` is null on every one of them because none has produced a settled
+ * signal yet. That is the truth, and the UI says so: UNPROVEN.
  */
 
-export type StrategyMarket = "FUTURES" | "SPOT" | "BOTH" | "META";
+const num = (value: number) => ({ kind: "number" as const, value });
 
-export interface StrategyIdentity {
-  slug: string;
-  name: string;
-  /** Edge class, e.g. "Momentum Breakout". */
-  className: string;
-  market: StrategyMarket;
-  /** One-sentence objective, condensed from strategies.md. */
-  objective: string;
-  /** Whether it emits directional scanner opportunities. */
-  directional: boolean;
-}
-
-export const STRATEGY_ROSTER: StrategyIdentity[] = [
+export const BUILT_IN_STRATEGIES: StrategyDefinition[] = [
   {
-    slug: "ignition",
-    name: "Ignition",
-    className: "Momentum Breakout",
-    market: "FUTURES",
-    objective:
-      "Captures the expansion leg after a volatility squeeze, entering on a confirmed range breakout with volume ignition.",
-    directional: true,
+    id: "breakout",
+    name: "Breakout",
+    summary:
+      "Price escapes a quiet range on heavy volume — the move that follows a squeeze.",
+    origin: "BUILT_IN",
+    enabled: true,
+    direction: "BOTH",
+    market: "PERPETUAL",
+    timeframe: "1h",
+    entry: [
+      {
+        left: { kind: "indicator", indicator: "close" },
+        op: "gt",
+        right: { kind: "indicator", indicator: "highest_high", period: 20 },
+      },
+      {
+        left: { kind: "indicator", indicator: "volume" },
+        op: "gte",
+        right: {
+          kind: "indicator",
+          indicator: "volume_sma",
+          period: 20,
+          multiplier: 1.5,
+        },
+      },
+      {
+        left: { kind: "indicator", indicator: "rsi", period: 14 },
+        op: "between",
+        right: num(55),
+        rightUpper: num(75),
+      },
+    ],
+    filters: [
+      {
+        left: { kind: "indicator", indicator: "close" },
+        op: "gt",
+        right: {
+          kind: "indicator",
+          indicator: "ema",
+          period: 200,
+          timeframe: "4h",
+        },
+      },
+      {
+        left: { kind: "indicator", indicator: "adx", period: 14, timeframe: "4h" },
+        op: "gte",
+        right: num(18),
+      },
+    ],
+    stop: { kind: "atr", period: 14, multiplier: 1.2 },
+    targets: [
+      { rMultiple: 1.5, closePercent: 50 },
+      { rMultiple: 3.0, closePercent: 50 },
+    ],
+    riskPercent: 1.0,
+    maxLeverage: 3,
+    riskLevel: "MODERATE",
+    record: null,
   },
   {
-    slug: "tidewater",
-    name: "Tidewater",
-    className: "Trend Accumulation",
+    id: "trend-pullback",
+    name: "Trend Pullback",
+    summary:
+      "Buy the dip inside a confirmed uptrend — join strength, don't chase it.",
+    origin: "BUILT_IN",
+    enabled: true,
+    direction: "LONG",
     market: "SPOT",
-    objective:
-      "Accumulates strong assets in confirmed uptrends, buying pullbacks to the moving-average zone and exiting only on structural trend failure.",
-    directional: true,
+    timeframe: "4h",
+    entry: [
+      {
+        left: { kind: "indicator", indicator: "close" },
+        op: "lte",
+        right: { kind: "indicator", indicator: "ema", period: 21 },
+      },
+      {
+        left: { kind: "indicator", indicator: "rsi", period: 14 },
+        op: "crosses_above",
+        right: num(50),
+      },
+    ],
+    filters: [
+      {
+        left: { kind: "indicator", indicator: "ema", period: 21, timeframe: "1d" },
+        op: "gt",
+        right: { kind: "indicator", indicator: "ema", period: 200, timeframe: "1d" },
+      },
+      {
+        left: { kind: "indicator", indicator: "close", timeframe: "1d" },
+        op: "gt",
+        right: { kind: "indicator", indicator: "ema", period: 200, timeframe: "1d" },
+      },
+    ],
+    stop: { kind: "structure", lookback: 20 },
+    targets: [
+      { rMultiple: 2.0, closePercent: 50 },
+      { rMultiple: 4.0, closePercent: 50 },
+    ],
+    riskPercent: 1.5,
+    maxLeverage: null,
+    riskLevel: "LOW",
+    record: null,
   },
   {
-    slug: "rubber-band",
-    name: "Rubber Band",
-    className: "Mean Reversion",
-    market: "FUTURES",
-    objective:
-      "Fades statistically overextended moves back to the mean in ranging regimes — the regime-complement of Ignition.",
-    directional: true,
+    id: "reversal",
+    name: "Reversal",
+    summary:
+      "Fade a move that went too far, too fast — snap back toward the average.",
+    origin: "BUILT_IN",
+    enabled: true,
+    direction: "BOTH",
+    market: "PERPETUAL",
+    timeframe: "1h",
+    entry: [
+      {
+        left: { kind: "indicator", indicator: "close" },
+        op: "lt",
+        right: { kind: "indicator", indicator: "bb_lower", period: 20 },
+      },
+      {
+        left: { kind: "indicator", indicator: "zscore", period: 20 },
+        op: "lte",
+        right: num(-2.2),
+      },
+      {
+        left: { kind: "indicator", indicator: "rsi", period: 14 },
+        op: "crosses_above",
+        right: num(30),
+      },
+    ],
+    filters: [
+      {
+        left: { kind: "indicator", indicator: "adx", period: 14, timeframe: "4h" },
+        op: "lt",
+        right: num(20),
+      },
+    ],
+    stop: { kind: "atr", period: 14, multiplier: 1.0 },
+    targets: [
+      { rMultiple: 1.2, closePercent: 60 },
+      { rMultiple: 2.0, closePercent: 40 },
+    ],
+    riskPercent: 0.75,
+    maxLeverage: 2,
+    riskLevel: "ELEVATED",
+    record: null,
   },
   {
-    slug: "sniper",
-    name: "Sniper",
-    className: "S/R Scalping",
-    market: "FUTURES",
-    objective:
-      "High-frequency, small-target scalps off algorithmically mapped support/resistance levels on the 15-minute chart.",
-    directional: true,
+    id: "level-bounce",
+    name: "Level Bounce",
+    summary:
+      "Price rejects a level that has held before — trade the bounce off proven support or resistance.",
+    origin: "BUILT_IN",
+    enabled: true,
+    direction: "BOTH",
+    market: "PERPETUAL",
+    timeframe: "15m",
+    entry: [
+      {
+        left: { kind: "indicator", indicator: "low" },
+        op: "lte",
+        right: { kind: "indicator", indicator: "lowest_low", period: 50 },
+      },
+      {
+        left: { kind: "indicator", indicator: "close" },
+        op: "gt",
+        right: { kind: "indicator", indicator: "lowest_low", period: 50 },
+      },
+      {
+        left: { kind: "indicator", indicator: "volume" },
+        op: "gte",
+        right: {
+          kind: "indicator",
+          indicator: "volume_sma",
+          period: 20,
+          multiplier: 1.3,
+        },
+      },
+    ],
+    filters: [
+      {
+        left: { kind: "indicator", indicator: "ema", period: 50, timeframe: "1h" },
+        op: "lt",
+        right: { kind: "indicator", indicator: "close", timeframe: "1h" },
+      },
+    ],
+    stop: { kind: "atr", period: 14, multiplier: 0.5 },
+    targets: [
+      { rMultiple: 1.0, closePercent: 50 },
+      { rMultiple: 2.0, closePercent: 50 },
+    ],
+    riskPercent: 0.5,
+    maxLeverage: 5,
+    riskLevel: "MODERATE",
+    record: null,
   },
   {
-    slug: "oracle",
-    name: "Oracle",
-    className: "Social & Fundamental Intelligence",
-    market: "BOTH",
-    objective:
-      "Detects information edges from social, news, on-chain and developer activity before they are priced in — always gated by technical confirmation.",
-    directional: true,
-  },
-  {
-    slug: "flush",
-    name: "Flush",
-    className: "Liquidation Reversal",
-    market: "FUTURES",
-    objective:
-      "Trades the snap-back after forced-liquidation cascades, when price reverts once forced flow is exhausted.",
-    directional: true,
-  },
-  {
-    slug: "crowded-boat",
-    name: "Crowded Boat",
-    className: "Funding & OI Squeeze",
-    market: "FUTURES",
-    objective:
-      "Positions against extreme, persistent crowd positioning when funding is stretched, open interest is bloated, and price stops progressing.",
-    directional: true,
-  },
-  {
-    slug: "relay",
-    name: "Relay",
-    className: "Relative-Strength Rotation",
-    market: "SPOT",
-    objective:
-      "Keeps capital in whatever is strongest — rotating between BTC, ETH, majors and stables by relative-strength ranking.",
-    directional: true,
-  },
-  {
-    slug: "harvest",
-    name: "Harvest",
-    className: "Delta-Neutral Funding Carry",
-    market: "BOTH",
-    objective:
-      "Earns funding-rate yield with near-zero price exposure (spot long + perp short) — the platform's income module.",
-    directional: false,
-  },
-  {
-    slug: "killzone",
-    name: "Killzone",
-    className: "Session Liquidity",
-    market: "FUTURES",
-    objective:
-      "Exploits session structure: the Asian range and its London/New York resolution, trading the liquidity sweep before the true move.",
-    directional: true,
-  },
-  {
-    slug: "chameleon",
-    name: "Chameleon",
-    className: "Adaptive Meta-Engine",
-    market: "META",
-    objective:
-      "Detects the market regime, ranks all modules by live expectancy in that regime, allocates the risk budget to the leaders, and de-risks when conditions turn hostile.",
-    directional: false,
+    id: "crowd-squeeze",
+    name: "Crowd Squeeze",
+    summary:
+      "Everyone is on one side, paying to stay there, and price has stopped rewarding them. Trade against the crowd.",
+    origin: "BUILT_IN",
+    enabled: false,
+    direction: "BOTH",
+    market: "PERPETUAL",
+    timeframe: "4h",
+    entry: [
+      {
+        left: { kind: "indicator", indicator: "funding_rate" },
+        op: "gte",
+        right: num(0.08),
+      },
+      {
+        left: { kind: "indicator", indicator: "open_interest" },
+        op: "gte",
+        right: {
+          kind: "indicator",
+          indicator: "open_interest",
+          period: 30,
+          multiplier: 1.0,
+        },
+      },
+      {
+        left: { kind: "indicator", indicator: "close" },
+        op: "crosses_below",
+        right: { kind: "indicator", indicator: "ema", period: 21 },
+      },
+    ],
+    filters: [],
+    stop: { kind: "structure", lookback: 12 },
+    targets: [
+      { rMultiple: 1.5, closePercent: 40 },
+      { rMultiple: 3.0, closePercent: 60 },
+    ],
+    riskPercent: 1.0,
+    maxLeverage: 2,
+    riskLevel: "HIGH",
+    record: null,
   },
 ];
 
-/** Strategies that emit directional scanner opportunities. */
-export const DIRECTIONAL_STRATEGIES = STRATEGY_ROSTER.filter(
-  (s) => s.directional,
-);
+export function strategyById(id: string): StrategyDefinition | undefined {
+  return BUILT_IN_STRATEGIES.find((s) => s.id === id);
+}
+
+export function strategyByName(name: string): StrategyDefinition | undefined {
+  return BUILT_IN_STRATEGIES.find((s) => s.name === name);
+}
+
+/** Names only — used by mocks, filters and the scanner. */
+export const STRATEGY_NAMES: string[] = BUILT_IN_STRATEGIES.map((s) => s.name);
 
 /** Spot-only strategies never emit SHORT or leveraged signals. */
-export const SPOT_ONLY_STRATEGY_NAMES = STRATEGY_ROSTER.filter(
+export const SPOT_ONLY_STRATEGY_NAMES: string[] = BUILT_IN_STRATEGIES.filter(
   (s) => s.market === "SPOT",
 ).map((s) => s.name);
-
-export function strategyBySlug(slug: string): StrategyIdentity | undefined {
-  return STRATEGY_ROSTER.find((s) => s.slug === slug);
-}
-
-export function strategyByName(name: string): StrategyIdentity | undefined {
-  return STRATEGY_ROSTER.find((s) => s.name === name);
-}

@@ -136,7 +136,6 @@ export type PerformanceTrend = "IMPROVING" | "STABLE" | "DECLINING";
 export interface StrategyPerformanceRow {
   slug: string;
   name: string;
-  className: string;
   status: "ACTIVE" | "PROBATION" | "DISABLED";
   winRate: number;
   profitFactor: number;

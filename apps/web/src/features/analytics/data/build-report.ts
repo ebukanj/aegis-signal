@@ -1,4 +1,4 @@
-import { STRATEGY_ROSTER } from "@/constants/strategies";
+import { BUILT_IN_STRATEGIES } from "@/constants/strategies";
 import type { AreaChartPoint } from "@/components/shared/charts/area-chart";
 import type { BarChartPoint } from "@/components/shared/charts/bar-chart";
 import type { MarketRegime } from "@/types/domain";
@@ -349,17 +349,16 @@ function buildStrategyPerformance(records: LedgerRecord[]): StrategyPerformanceR
 
   // Collect rows
   const rows: StrategyPerformanceRow[] = [];
-  for (const identity of STRATEGY_ROSTER) {
-    const stratRecords = byStrategy.get(identity.slug) ?? [];
+  for (const identity of BUILT_IN_STRATEGIES) {
+    const stratRecords = byStrategy.get(identity.id) ?? [];
     if (stratRecords.length === 0) continue;
 
     const kpi = computeKpiRaw(stratRecords);
 
     rows.push({
-      slug: identity.slug,
+      slug: identity.id,
       name: identity.name,
-      className: identity.className,
-      status: (STRATEGY_STATUS[identity.slug] ?? "ACTIVE") as "ACTIVE" | "PROBATION" | "DISABLED",
+      status: (STRATEGY_STATUS[identity.id] ?? "ACTIVE") as "ACTIVE" | "PROBATION" | "DISABLED",
       winRate: kpi.winRate,
       profitFactor: kpi.profitFactor,
       expectancy: kpi.expectancy,
@@ -532,7 +531,7 @@ function buildRiskAnalytics(records: LedgerRecord[]): RiskAnalytics {
   const totalRisk = triggered.reduce((s, r) => s + r.riskPercent, 0);
   const exposureByStrategy: ExposureSlice[] = [...stratGroups.entries()]
     .map(([slug, recs]) => ({
-      label: STRATEGY_ROSTER.find((s) => s.slug === slug)?.name ?? slug,
+      label: BUILT_IN_STRATEGIES.find((s) => s.id === slug)?.name ?? slug,
       share: pct(recs.reduce((s, r) => s + r.riskPercent, 0), totalRisk),
       netR: round(recs.reduce((s, r) => s + r.returnR, 0), 2),
     }))
@@ -589,7 +588,7 @@ function buildRegimePerformance(records: LedgerRecord[]): RegimePerformance[] {
       const sNetR = stratRecs.reduce((s, r) => s + r.returnR, 0);
       if (sNetR > bestNetR) {
         bestNetR = sNetR;
-        bestStrategy = STRATEGY_ROSTER.find((s) => s.slug === slug)?.name ?? slug;
+        bestStrategy = BUILT_IN_STRATEGIES.find((s) => s.id === slug)?.name ?? slug;
       }
     }
 
@@ -815,8 +814,8 @@ function buildCorrelationMatrix(records: LedgerRecord[]): CorrelationMatrix {
   for (let i = 0; i < slugs.length; i++) {
     for (let j = i + 1; j < slugs.length; j++) {
       pairs.push({
-        a: STRATEGY_ROSTER.find((s) => s.slug === slugs[i])?.name ?? slugs[i],
-        b: STRATEGY_ROSTER.find((s) => s.slug === slugs[j])?.name ?? slugs[j],
+        a: BUILT_IN_STRATEGIES.find((s) => s.id === slugs[i])?.name ?? slugs[i],
+        b: BUILT_IN_STRATEGIES.find((s) => s.id === slugs[j])?.name ?? slugs[j],
         score: values[i][j],
       });
     }
@@ -826,7 +825,7 @@ function buildCorrelationMatrix(records: LedgerRecord[]): CorrelationMatrix {
   return {
     strategies: slugs.map((slug) => ({
       slug,
-      name: STRATEGY_ROSTER.find((s) => s.slug === slug)?.name ?? slug,
+      name: BUILT_IN_STRATEGIES.find((s) => s.id === slug)?.name ?? slug,
     })),
     values,
     complementary: pairs.slice(0, 3),

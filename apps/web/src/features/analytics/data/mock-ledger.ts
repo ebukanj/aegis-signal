@@ -1,4 +1,4 @@
-import { STRATEGY_ROSTER } from "@/constants/strategies";
+import { BUILT_IN_STRATEGIES } from "@/constants/strategies";
 import { createSeededRandom, pick, randInt } from "@/lib/seeded-random";
 import type { LedgerRecord } from "@/features/analytics/types";
 import type {
@@ -60,7 +60,7 @@ interface StrategySeed {
 const DEFAULT_FIT = 40;
 
 const STRATEGY_SEEDS: Record<string, StrategySeed> = {
-  ignition: {
+  breakout: {
     timeframes: ["1h", "4h"],
     regimeFit: {
       TRENDING_BULL: 82, TRENDING_BEAR: 70, HIGH_VOLATILITY: 76,
@@ -68,7 +68,7 @@ const STRATEGY_SEEDS: Record<string, StrategySeed> = {
     },
     signalsPerWeek: 9, baseWinRate: 48, avgWinR: 2.4,
   },
-  tidewater: {
+  "trend-pullback": {
     timeframes: ["4h", "1d"],
     regimeFit: {
       TRENDING_BULL: 95, TRENDING_BEAR: 10, HIGH_VOLATILITY: 40,
@@ -76,15 +76,15 @@ const STRATEGY_SEEDS: Record<string, StrategySeed> = {
     },
     signalsPerWeek: 1.5, baseWinRate: 55, avgWinR: 3.1, spotOnly: true,
   },
-  "rubber-band": {
+  reversal: {
     timeframes: ["1h", "4h"],
     regimeFit: {
       RANGE: 92, TRANSITION: 55, HIGH_VOLATILITY: 35,
       TRENDING_BULL: 28, TRENDING_BEAR: 25, RISK_OFF: 30,
     },
-    signalsPerWeek: 6, baseWinRate: 52, avgWinR: 1.5, status: "DISABLED",
+    signalsPerWeek: 6, baseWinRate: 52, avgWinR: 1.5,
   },
-  sniper: {
+  "level-bounce": {
     timeframes: ["15m"],
     regimeFit: {
       RANGE: 78, TRANSITION: 62, HIGH_VOLATILITY: 48,
@@ -92,67 +92,19 @@ const STRATEGY_SEEDS: Record<string, StrategySeed> = {
     },
     signalsPerWeek: 18, baseWinRate: 66, avgWinR: 0.9,
   },
-  oracle: {
-    timeframes: ["4h", "1d"],
-    regimeFit: {
-      TRENDING_BULL: 84, TRANSITION: 62, HIGH_VOLATILITY: 58,
-      TRENDING_BEAR: 40, RANGE: 48, RISK_OFF: 25,
-    },
-    signalsPerWeek: 3, baseWinRate: 50, avgWinR: 2.8,
-  },
-  flush: {
-    timeframes: ["15m", "1h"],
-    regimeFit: {
-      HIGH_VOLATILITY: 94, RISK_OFF: 80, TRENDING_BEAR: 68,
-      TRENDING_BULL: 35, RANGE: 30, TRANSITION: 50,
-    },
-    signalsPerWeek: 2.5, baseWinRate: 58, avgWinR: 2.2,
-  },
-  "crowded-boat": {
+  "crowd-squeeze": {
     timeframes: ["4h", "1d"],
     regimeFit: {
       RANGE: 72, TRANSITION: 68, HIGH_VOLATILITY: 70,
       TRENDING_BULL: 42, TRENDING_BEAR: 50, RISK_OFF: 55,
     },
-    signalsPerWeek: 1.8, baseWinRate: 54, avgWinR: 2.6,
-  },
-  relay: {
-    timeframes: ["1d"],
-    regimeFit: {
-      TRENDING_BULL: 88, RANGE: 55, TRANSITION: 48,
-      TRENDING_BEAR: 30, HIGH_VOLATILITY: 40, RISK_OFF: 20,
-    },
-    signalsPerWeek: 1.2, baseWinRate: 57, avgWinR: 2.3, spotOnly: true,
-  },
-  harvest: {
-    timeframes: ["1d"],
-    regimeFit: {
-      RANGE: 85, TRENDING_BULL: 76, TRANSITION: 60,
-      HIGH_VOLATILITY: 42, TRENDING_BEAR: 45, RISK_OFF: 38,
-    },
-    signalsPerWeek: 0.8, baseWinRate: 78, avgWinR: 0.6,
-  },
-  killzone: {
-    timeframes: ["15m", "1h"],
-    regimeFit: {
-      HIGH_VOLATILITY: 70, RANGE: 64, TRANSITION: 58,
-      TRENDING_BULL: 50, TRENDING_BEAR: 46, RISK_OFF: 35,
-    },
-    signalsPerWeek: 7, baseWinRate: 51, avgWinR: 1.4, status: "PROBATION",
-  },
-  chameleon: {
-    timeframes: ["4h", "1d"],
-    regimeFit: {
-      TRENDING_BULL: 82, TRENDING_BEAR: 76, RANGE: 78,
-      TRANSITION: 74, HIGH_VOLATILITY: 75, RISK_OFF: 70,
-    },
-    signalsPerWeek: 4, baseWinRate: 56, avgWinR: 2.0,
+    signalsPerWeek: 1.8, baseWinRate: 54, avgWinR: 2.6, status: "DISABLED",
   },
 };
 
 export const STRATEGY_STATUS: Record<string, StrategyStatus> =
   Object.fromEntries(
-    STRATEGY_ROSTER.map((s) => [s.slug, STRATEGY_SEEDS[s.slug].status ?? "ACTIVE"]),
+    BUILT_IN_STRATEGIES.map((s) => [s.id, STRATEGY_SEEDS[s.id]?.status ?? "ACTIVE"]),
   );
 
 export const LEDGER_EXCHANGES: string[] = [...EXCHANGES];
@@ -243,7 +195,7 @@ function holdingHoursFor(
 }
 
 function buildStrategyRecords(slug: string): LedgerRecord[] {
-  const identity = STRATEGY_ROSTER.find((s) => s.slug === slug)!;
+  const identity = BUILT_IN_STRATEGIES.find((s) => s.id === slug)!;
   const seed = STRATEGY_SEEDS[slug];
   const rand = createSeededRandom(
     slug.split("").reduce((acc, ch) => acc + ch.charCodeAt(0) * 131, 977),
@@ -382,8 +334,8 @@ function buildStrategyRecords(slug: string): LedgerRecord[] {
 }
 
 /** The full ledger, ascending by close time. */
-export const mockLedger: LedgerRecord[] = STRATEGY_ROSTER.flatMap((s) =>
-  buildStrategyRecords(s.slug),
+export const mockLedger: LedgerRecord[] = BUILT_IN_STRATEGIES.flatMap((s) =>
+  buildStrategyRecords(s.id),
 ).sort(
   (a, b) => new Date(a.closedAt).getTime() - new Date(b.closedAt).getTime(),
 );

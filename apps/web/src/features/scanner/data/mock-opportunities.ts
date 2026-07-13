@@ -1,6 +1,6 @@
 import { createSeededRandom, pick, randInt } from "@/lib/seeded-random";
 import {
-  DIRECTIONAL_STRATEGIES,
+  BUILT_IN_STRATEGIES,
   SPOT_ONLY_STRATEGY_NAMES,
 } from "@/constants/strategies";
 import type {
@@ -44,9 +44,9 @@ const COINS: { coin: string; basePrice: number }[] = [
 
 const EXCHANGES = ["Binance", "Bybit", "OKX", "Bitget", "KuCoin"] as const;
 /** Real roster (constants/strategies.ts) — directional strategies only. */
-const STRATEGIES = DIRECTIONAL_STRATEGIES.map((s) => s.name);
+const STRATEGIES = BUILT_IN_STRATEGIES.map((s) => s.name);
 const SPOT_ONLY = new Set(SPOT_ONLY_STRATEGY_NAMES);
-const FUTURES_STRATEGIES = DIRECTIONAL_STRATEGIES.filter(
+const FUTURES_STRATEGIES = BUILT_IN_STRATEGIES.filter(
   (s) => s.market !== "SPOT",
 ).map((s) => s.name);
 const REGIMES: MarketRegime[] = [

@@ -57,7 +57,7 @@ export function generateMockAdminData() {
   ];
 
   const strategies: AdminStrategy[] = [
-    { id: "str_1", name: "Momentum Ignition", version: "v2.1.0", status: "running", health: "healthy", signalsToday: 145, winRate: 62.4, enabled: true },
+    { id: "str_1", name: "Breakout", version: "v2.1.0", status: "running", health: "healthy", signalsToday: 145, winRate: 62.4, enabled: true },
     { id: "str_2", name: "Statistical Arbitrage", version: "v1.8.4", status: "running", health: "healthy", signalsToday: 890, winRate: 51.2, enabled: true },
     { id: "str_3", name: "Mean Reversion Lite", version: "v1.0.1", status: "stopped", health: "offline", signalsToday: 0, winRate: 0, enabled: false },
     { id: "str_4", name: "Orderbook Imbalance", version: "v3.0.0-beta", status: "error", health: "critical", signalsToday: 12, winRate: 45.0, enabled: true },

@@ -61,7 +61,8 @@ owner — do not re-derive it, and do not copy it.
 | **Engineering standards, Clean Architecture, DDD** | [docs/03-ENGINEERING_PHILOSOPHY.md](docs/03-ENGINEERING_PHILOSOPHY.md) | obey |
 | **Functional requirements, scope, roadmap** | [docs/04-PROJECT_PRD.md](docs/04-PROJECT_PRD.md) | cite |
 | **System design, modules, event flow** | [docs/05-SOLUTION_ARCHITECTURE.md](docs/05-SOLUTION_ARCHITECTURE.md) | cite |
-| **Strategy logic, entry/exit rules, expectancy** | [docs/06-STRATEGIES.md](docs/06-STRATEGIES.md) | implement, never invent |
+| **The strategy model + the 5 built-in strategies** | [docs/06-STRATEGIES.md](docs/06-STRATEGIES.md) | implement, never invent |
+| **The `StrategyDefinition` schema (a strategy is a *document*)** | `packages/contracts/src/strategy.ts` | one evaluator reads it — never write a bespoke plugin |
 | **Architecture *decisions* and their rationale** | [docs/adr/](docs/adr/) | never silently reverse |
 | **UI tokens, spacing, color, component rules** | [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | obey |
 | **API contract / DTO shapes / domain enums** | `packages/contracts` (code) | import, never redeclare |
@@ -98,7 +99,8 @@ system. Keep it accurate; a stale reality section is a defect.
 
 | Area | Status |
 |---|---|
-| `apps/web` | **Built.** Next.js 15 frontend, all workspaces, currently rendering **mock data**. Typechecks, lints, and builds clean. |
+| `apps/web` | **Built.** Next.js 15 frontend, rendering **mock data**. Typechecks, lints, and builds clean. Decongested to five workspaces — Backtesting, Paper Trading and the Dashboard were removed ([ADR-023](docs/adr/ADR-023-strategy-as-document.md)). |
+| Strategies | **11 codenames → 5 plain-English documents.** A strategy is now data, not code. None is implemented or validated; all are UNPROVEN. |
 | `packages/contracts` | **Built and tested.** The one definition of every DTO and domain enum. |
 | `apps/api` | **Does not exist.** The backend has not been started. This is deliberate — see [ADR-022](docs/adr/ADR-022-contract-first-backend.md). |
 | `packages/database` | **Not built.** No Prisma schema yet. |

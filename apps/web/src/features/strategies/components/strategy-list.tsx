@@ -80,8 +80,7 @@ export function StrategyList({
                     {strategy.name}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {strategy.className} ·{" "}
-                    {strategy.market === "META" ? "Meta" : strategy.market.toLowerCase()}
+                    {strategy.description}
                   </p>
                 </div>
                 <RadialProgress

@@ -48,7 +48,7 @@ export function StrategyLabPage() {
     const query = debouncedSearch.trim().toLowerCase();
     const list = data.filter((s) => {
       if (statusFilter !== "ALL" && s.status !== statusFilter) return false;
-      if (query && !`${s.name} ${s.className}`.toLowerCase().includes(query))
+      if (query && !`${s.name} ${s.description}`.toLowerCase().includes(query))
         return false;
       return true;
     });

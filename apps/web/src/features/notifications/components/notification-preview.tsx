@@ -14,7 +14,7 @@ export function NotificationPreview() {
       <div className="text-[#59bdf4] font-semibold mb-1">Aegis Signal Bot</div>
       <div className="font-mono text-xs text-green-400 mb-2">🟢 LONG: BTC/USDT</div>
       <p className="mb-2 whitespace-pre-wrap">
-        Strategy: Momentum Ignition{"\n"}
+        Strategy: Breakout{"\n"}
         Confidence: 94%{"\n"}
         Entry: $64,250.00
       </p>

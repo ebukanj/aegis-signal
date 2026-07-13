@@ -51,7 +51,7 @@ export function MarketCompatibility({
         })}
       </ul>
       <p className="text-xs text-muted-foreground">
-        The Chameleon allocator uses these ratings with live expectancy to
+        The Breakout allocator uses these ratings with live expectancy to
         decide which strategies trade in the current regime.
       </p>
     </Card>

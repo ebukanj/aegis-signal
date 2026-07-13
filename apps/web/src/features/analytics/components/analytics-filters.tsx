@@ -12,7 +12,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { useAnalyticsStore } from "@/stores/analytics-store";
-import { STRATEGY_ROSTER } from "@/constants/strategies";
+import { BUILT_IN_STRATEGIES } from "@/constants/strategies";
 import { LEDGER_EXCHANGES } from "../data/mock-ledger";
 import { DATE_RANGES } from "../types";
 import type { MarketRegime, SignalDirection, Timeframe } from "@/types/domain";
@@ -73,7 +73,7 @@ export function AnalyticsFilters({ className }: AnalyticsFiltersProps) {
         onValueChange={(v) => setFilter("strategy", v)}
         options={[
           { value: "ALL", label: "All Strategies" },
-          ...STRATEGY_ROSTER.map((s) => ({ value: s.slug, label: s.name })),
+          ...BUILT_IN_STRATEGIES.map((s) => ({ value: s.id, label: s.name })),
         ]}
       />
 

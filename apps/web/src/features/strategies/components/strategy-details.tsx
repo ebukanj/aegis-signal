@@ -82,10 +82,6 @@ export function StrategyDetails({ strategy, onBack }: StrategyDetailsProps) {
         {/* Profile meta */}
         <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 xl:grid-cols-6">
           <div>
-            <dt className="label-caps">Class</dt>
-            <dd className="mt-0.5 font-medium">{strategy.className}</dd>
-          </div>
-          <div>
             <dt className="label-caps">Market</dt>
             <dd className="mt-0.5 font-medium capitalize">
               {strategy.market.toLowerCase()}
