@@ -1,6 +1,7 @@
 import { createSeededRandom, pick, randInt } from "@/lib/seeded-random";
 import { mockOpportunities } from "@/features/scanner/data/mock-opportunities";
 import type { Opportunity } from "@/features/scanner/types";
+import { buildCalibration } from "@/features/signals/data/mock-confidence";
 import type {
   AICommentary,
   ConfidenceContributor,
@@ -130,37 +131,6 @@ const FALLBACK_NARRATIVE = (opp: Opportunity): StrategyExplanationContent => ({
   confirmations: ["Independent confirmation checks passed"],
 });
 
-const CONTRIBUTOR_NOTES: Record<string, [string, string]> = {
-  // [strong note, weak note]
-  "Trend Alignment": [
-    "Higher-timeframe trend points the same way as this trade",
-    "Higher-timeframe trend is mixed — alignment is partial",
-  ],
-  "Volume Confirmation": [
-    "Volume expanded exactly where the strategy needs it",
-    "Volume support is present but below the ideal profile",
-  ],
-  Momentum: [
-    "Momentum is accelerating in the trade direction",
-    "Momentum is positive but decelerating",
-  ],
-  "Market Regime": [
-    "Current regime historically favors this strategy",
-    "Regime is acceptable but not this strategy's best environment",
-  ],
-  Liquidity: [
-    "Order-book depth comfortably supports execution",
-    "Liquidity is adequate but thinner than average for this pair",
-  ],
-  Volatility: [
-    "Volatility sits in the strategy's optimal band",
-    "Volatility is near the edge of the accepted band",
-  ],
-  "Strategy Health": [
-    "Strategy's recent live performance is above its long-term average",
-    "Strategy health is acceptable but below its long-term average",
-  ],
-};
 
 function buildDetail(opp: Opportunity): SignalDetail {
   const rand = createSeededRandom(hashId(opp.id));
@@ -176,13 +146,11 @@ function buildDetail(opp: Opportunity): SignalDetail {
     round(opp.entryPrice + sign * stopDistance * (opp.rewardRisk + 1.2)),
   ];
 
-  // Confidence contributors scatter around the overall score
-  const confidenceBreakdown: ConfidenceContributor[] = Object.entries(
-    CONTRIBUTOR_NOTES,
-  ).map(([name, [strong, weak]]) => {
-    const score = clamp(opp.confidence + randInt(rand, -14, 10), 35, 99);
-    return { name, score, note: score >= opp.confidence - 3 ? strong : weak };
-  });
+  // The score and its arithmetic, in the shape the Confidence Engine will emit
+  // (ADR-024). Contributors are WEIGHTS that sum to the score — not a scatter of
+  // independent 0-100 numbers, which summed to nothing and meant nothing.
+  const calibration = buildCalibration(opp);
+  const confidenceBreakdown: ConfidenceContributor[] = calibration.contributors;
 
   const riskRatings: RiskLevel[] = ["LOW", "MODERATE", "ELEVATED", "HIGH"];
   const riskIndex = riskRatings.indexOf(opp.riskLevel);
@@ -316,17 +284,6 @@ function buildDetail(opp: Opportunity): SignalDetail {
 
   const narrative = STRATEGY_NARRATIVES[opp.strategies[0]] ?? FALLBACK_NARRATIVE;
 
-  // Confluence (ADR-021): independent agreement is itself measured evidence
-  if (opp.strategies.length > 1) {
-    confidenceBreakdown.push({
-      name: "Strategy Confluence",
-      score: clamp(78 + (opp.strategies.length - 1) * 9, 0, 99),
-      note: `${opp.strategies.length} independent strategies (${opp.strategies.join(
-        ", ",
-      )}) reached the same conclusion — historically the strongest signal class.`,
-    });
-  }
-
   return {
     id: opp.id,
     coin: opp.coin,
@@ -357,6 +314,7 @@ function buildDetail(opp: Opportunity): SignalDetail {
     suggestedRiskPercent: null, // arrives with portfolio settings
 
     confidenceBreakdown,
+    calibration,
     explanation: narrative(opp),
     checklist: [
       { label: "Trend confirmed", passed: true },

@@ -20,6 +20,10 @@ import {
   shortImpliesPerpetual,
   stopIsOnInvalidationSide,
 } from "./invariants";
+import {
+  calibratedConfidenceSchema,
+  confidenceContributorSchema,
+} from "./confidence";
 
 /**
  * The Signal — the single output of Aegis Signal (AGENTS.md §1).
@@ -47,13 +51,6 @@ export const executionGuidanceSchema = z
 export type ExecutionGuidance = z.infer<typeof executionGuidanceSchema>;
 
 /* ── Signal detail ─────────────────────────────────────────────────── */
-
-export const confidenceContributorSchema = z.object({
-  name: z.string(),
-  score: confidenceSchema,
-  note: z.string(),
-});
-export type ConfidenceContributor = z.infer<typeof confidenceContributorSchema>;
 
 export const riskFactorSchema = z.object({
   name: z.string(),
@@ -145,6 +142,13 @@ export const signalDetailSchema = z
     suggestedRiskPercent: z.number().positive().nullable(),
 
     confidenceBreakdown: z.array(confidenceContributorSchema),
+    /**
+     * The score, and the evidence entitling it to be called a probability
+     * (ADR-024). Optional only while the backend is being built — once the
+     * Confidence Engine ships this is required, and a bare `confidence` number
+     * is no longer sufficient.
+     */
+    calibration: calibratedConfidenceSchema.optional(),
     explanation: strategyExplanationContentSchema,
     checklist: z.array(checklistItemSchema),
 

@@ -9,7 +9,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ConfidenceBreakdown } from "@/features/signals/components/confidence-breakdown";
+import { ConfidenceBreakdownPanel } from "@/features/signals/components/confidence-breakdown-panel";
 import { HistoricalPerformance } from "@/features/signals/components/historical-performance";
 import { RiskAnalysis } from "@/features/signals/components/risk-analysis";
 import { SignalChart } from "@/features/signals/components/signal-chart";
@@ -102,7 +102,11 @@ export function SignalIntelligencePage({ signalId }: { signalId: string }) {
 
       {/* Transparency: confidence and risk */}
       <div className="grid gap-4 lg:grid-cols-12">
-        <ConfidenceBreakdown signal={detail} className="lg:col-span-6" />
+        {detail.calibration && (
+          <div className="lg:col-span-6">
+            <ConfidenceBreakdownPanel calibration={detail.calibration} />
+          </div>
+        )}
         <RiskAnalysis signal={detail} className="lg:col-span-6" />
       </div>
 

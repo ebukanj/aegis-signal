@@ -5,7 +5,7 @@ import { Radar } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BUILT_IN_STRATEGIES } from "@/constants/strategies";
+import { useStrategyStore } from "@/features/strategies/stores/strategy-store";
 import { scannerApi } from "@/features/scanner/api/scanner-api";
 import { ScanControls } from "@/features/scanner/components/scan-controls";
 import { ScanResults } from "@/features/scanner/components/scan-results";
@@ -25,12 +25,14 @@ import type { Opportunity } from "@/features/scanner/types";
  * it is what makes it a scanner rather than a second, noisier feed.
  */
 export function ScannerPage() {
-  const [request, setRequest] = useState<ScanRequest>({
-    strategies: BUILT_IN_STRATEGIES.filter((s) => s.enabled).map((s) => s.name),
+  const strategies = useStrategyStore((s) => s.strategies);
+
+  const [request, setRequest] = useState<ScanRequest>(() => ({
+    strategies: strategies.filter((s) => s.enabled).map((s) => s.name),
     market: "ALL",
     exchange: "ALL",
     timeframe: "ALL",
-  });
+  }));
 
   const [result, setResult] = useState<ScanResult | null>(null);
   const [scanning, setScanning] = useState(false);

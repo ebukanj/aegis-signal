@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { PowerOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared/error-state";
 import { PageHeader } from "@/components/shared/page-header";
-import { signalsApi } from "@/features/signals/api/signals-api";
+import { useTodaysSignals } from "@/features/signals/hooks/use-todays-signals";
 import { MarketContextStrip } from "@/features/signals/components/market-context-strip";
 import { NoSignals } from "@/features/signals/components/no-signals";
 import { SignalCard } from "@/features/signals/components/signal-card";
@@ -22,10 +25,9 @@ import type { Opportunity } from "@/features/scanner/types";
 export function SignalsWorkspace() {
   const [selected, setSelected] = useState<Opportunity | null>(null);
 
-  const { data, isPending, isError, refetch } = useQuery({
-    queryKey: ["signals", "today"],
-    queryFn: () => signalsApi.getTodaysSignals(),
-  });
+  // Reads the strategy store: a strategy you switched off cannot produce a
+  // signal, cannot be a confluence partner, and cannot reach Prime (ADR-024).
+  const { data, isPending, isError, refetch } = useTodaysSignals();
 
   if (isPending) return <LoadingState />;
 
@@ -50,7 +52,9 @@ export function SignalsWorkspace() {
 
       <MarketContextStrip context={context} primeCount={prime.length} />
 
-      {prime.length === 0 ? (
+      {context.strategiesActive === 0 ? (
+        <NoStrategiesEnabled />
+      ) : prime.length === 0 ? (
         <NoSignals context={context} />
       ) : (
         <section className="space-y-3">
@@ -101,6 +105,29 @@ export function SignalsWorkspace() {
 
       <SignalPanel signal={selected} onClose={() => setSelected(null)} />
     </div>
+  );
+}
+
+/**
+ * Silence with a cause. If every strategy is off, the platform is not broken —
+ * it is doing exactly what you told it to, and it should say so rather than
+ * show an empty page that looks like a failure.
+ */
+function NoStrategiesEnabled() {
+  return (
+    <Card className="flex flex-col items-center gap-3 border-dashed px-6 py-14 text-center">
+      <PowerOff className="size-6 text-muted-foreground" aria-hidden />
+      <h2 className="text-lg font-semibold tracking-tight">
+        Every strategy is switched off.
+      </h2>
+      <p className="max-w-md text-sm text-muted-foreground">
+        Nothing is hunting for you, so there is nothing to show. Switch a
+        strategy back on and the next scan will find trades again.
+      </p>
+      <Button asChild variant="outline">
+        <Link href="/strategies">Go to Strategies</Link>
+      </Button>
+    </Card>
   );
 }
 

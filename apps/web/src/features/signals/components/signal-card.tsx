@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { formatPrice, formatSignalTime } from "@/lib/format";
 import { buildTradeInstruction } from "@/lib/trade-instruction";
 import { cn } from "@/lib/utils";
+import { LivePrice } from "@/features/signals/components/live-price";
 import type { Opportunity } from "@/features/scanner/types";
 
 /**
@@ -71,9 +72,13 @@ export function SignalCard({
 
         <div className="ml-auto flex items-center gap-2">
           <StatusBadge status={risk.status}>{risk.label} risk</StatusBadge>
-          <ConfidenceBadge confidence={signal.confidence} />
+          <ConfidenceBadge score={signal.confidence} />
         </div>
       </div>
+
+      {/* Is this trade still there? The entry we published goes stale the
+          moment price moves away from it. */}
+      <LivePrice signal={signal} />
 
       {/* The instruction — the thing a trader actually executes */}
       <p className="text-sm leading-relaxed">{instruction}</p>

@@ -18,8 +18,11 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { REGIME_META, RISK_META } from "@/constants/domain";
 import { formatPrice, formatSignalTime } from "@/lib/format";
 import { buildTradeInstruction } from "@/lib/trade-instruction";
+import { buildCalibration } from "@/features/signals/data/mock-confidence";
 import { useSignalDetail } from "@/features/signals/hooks/use-signal-detail";
+import { ConfidenceBreakdownPanel } from "@/features/signals/components/confidence-breakdown-panel";
 import { CopySignalButton } from "@/features/signals/components/copy-signal-button";
+import { LivePrice } from "@/features/signals/components/live-price";
 import { PositionCalculator } from "@/features/signals/components/position-calculator";
 import { StrategyExplanation } from "@/features/signals/components/strategy-explanation";
 import type { Opportunity } from "@/features/scanner/types";
@@ -56,6 +59,10 @@ function PanelBody({ signal }: { signal: Opportunity }) {
   const market = REGIME_META[signal.regime];
   const detail = data?.detail;
 
+  // Shaped exactly as the Confidence Engine will emit it (ADR-024). The
+  // frontend renders this; it must never compute a score.
+  const calibration = buildCalibration(signal);
+
   return (
     <>
       {/* pr-12 keeps the badges clear of the sheet's close button */}
@@ -72,10 +79,17 @@ function PanelBody({ signal }: { signal: Opportunity }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <ConfidenceBadge confidence={signal.confidence} />
+          <ConfidenceBadge
+            score={calibration.score}
+            displayedWinRate={calibration.displayedWinRate}
+            basis={calibration.basis}
+          />
           <StatusBadge status={risk.status}>{risk.label} risk</StatusBadge>
           <StatusBadge status={market.status}>{market.label}</StatusBadge>
         </div>
+
+        {/* Is the trade still there? */}
+        <LivePrice signal={signal} showHint />
 
         <SheetDescription className="text-sm leading-relaxed text-foreground">
           {buildTradeInstruction(signal)}
@@ -109,6 +123,9 @@ function PanelBody({ signal }: { signal: Opportunity }) {
         </Card>
 
         <PositionCalculator signal={signal} />
+
+        {/* The score, with its arithmetic shown — never a bare number. */}
+        <ConfidenceBreakdownPanel calibration={calibration} />
 
         {/* Why it exists */}
         {isPending && (

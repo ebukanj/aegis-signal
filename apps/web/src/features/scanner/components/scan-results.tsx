@@ -139,7 +139,7 @@ export function ScanResults({
                       {signal.rewardRisk}R
                     </TableCell>
                     <TableCell className="text-right">
-                      <ConfidenceBadge confidence={signal.confidence} />
+                      <ConfidenceBadge score={signal.confidence} />
                     </TableCell>
                   </TableRow>
                 ))}

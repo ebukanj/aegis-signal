@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BUILT_IN_STRATEGIES } from "@/constants/strategies";
+import { useStrategyStore } from "@/features/strategies/stores/strategy-store";
 import { cn } from "@/lib/utils";
 import type { ScanRequest } from "@/features/scanner/data/mock-scan";
 
@@ -40,12 +40,23 @@ export function ScanControls({
   onScan: () => void;
   scanning: boolean;
 }) {
+  const strategies = useStrategyStore((s) => s.strategies);
+
   const toggle = (name: string) => {
     const next = request.strategies.includes(name)
       ? request.strategies.filter((s) => s !== name)
       : [...request.strategies, name];
     onChange({ ...request, strategies: next });
   };
+
+  /**
+   * You may scan with a strategy you have switched off — that is what a tool is
+   * for. But those results are EXPLORATION, not signals: a rule you have
+   * rejected does not get to reach your phone (ADR-024).
+   */
+  const exploringWith = request.strategies.filter(
+    (name) => !strategies.some((s) => s.name === name && s.enabled),
+  );
 
   return (
     <Card className="gap-5 p-5">
@@ -60,7 +71,7 @@ export function ScanControls({
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        {BUILT_IN_STRATEGIES.map((strategy) => {
+        {strategies.map((strategy) => {
           const checked = request.strategies.includes(strategy.name);
           return (
             <label
@@ -80,8 +91,13 @@ export function ScanControls({
                 className="mt-0.5"
               />
               <span className="min-w-0 space-y-0.5">
-                <span className="block text-sm font-medium">
+                <span className="flex items-center gap-1.5 text-sm font-medium">
                   {strategy.name}
+                  {!strategy.enabled && (
+                    <span className="rounded border px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      off
+                    </span>
+                  )}
                 </span>
                 <span className="block text-xs leading-snug text-muted-foreground">
                   {strategy.summary}
@@ -91,6 +107,16 @@ export function ScanControls({
           );
         })}
       </div>
+
+      {exploringWith.length > 0 && (
+        <p className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Exploration.</span>{" "}
+          You are scanning with{" "}
+          {exploringWith.join(", ")} — {exploringWith.length === 1 ? "a strategy" : "strategies"} you
+          have switched off. Anything found here is for your eyes only: a rule
+          you rejected cannot become a Prime signal or reach your alerts.
+        </p>
+      )}
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1.5">

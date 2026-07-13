@@ -72,7 +72,7 @@ const columns: ColumnDef<SimilarSignal>[] = [
   {
     accessorKey: "confidence",
     header: "Confidence",
-    cell: ({ row }) => <ConfidenceBadge confidence={row.original.confidence} />,
+    cell: ({ row }) => <ConfidenceBadge score={row.original.confidence} />,
   },
 ];
 

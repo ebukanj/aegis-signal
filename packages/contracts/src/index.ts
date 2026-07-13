@@ -12,6 +12,7 @@
 
 export * from "./domain";
 export * from "./invariants";
+export * from "./confidence";
 export * from "./strategy";
 export * from "./strategy-language";
 export * from "./signal";
