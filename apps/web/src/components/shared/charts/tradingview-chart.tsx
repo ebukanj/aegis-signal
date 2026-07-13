@@ -80,7 +80,10 @@ function TradingViewChartInner({
       role="img"
       aria-label={ariaLabel}
       className={cn(
-        "tradingview-widget-container h-[420px] w-full overflow-hidden rounded-lg border md:h-[480px]",
+        // Taller than the old 420px: a chart you have to squint at is not a
+        // chart. The space came from the price row that used to sit below it,
+        // which duplicated the panel.
+        "tradingview-widget-container h-[560px] w-full overflow-hidden rounded-lg border lg:h-[680px]",
         className,
       )}
     />

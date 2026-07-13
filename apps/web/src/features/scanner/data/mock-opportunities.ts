@@ -19,6 +19,17 @@ import type { Opportunity } from "@/features/scanner/types";
  * only `api/scanner-api.ts` (and toolbar filter options) may import it.
  */
 
+/**
+ * Liquid majors that genuinely list on the exchanges below, in both spot and
+ * perpetual. This is not cosmetic: the chart resolves a real TradingView symbol
+ * from `{exchange}:{coin}USDT`, so an invented pairing renders "this symbol
+ * doesn't exist" — a broken chart on a signal that otherwise looks authoritative.
+ *
+ * MATIC was removed: it no longer exists. Polygon migrated to POL, and
+ * BINANCE:MATICUSDT is gone. Mock data must lie about *values*, never about
+ * *reality* — a coin that does not exist is not a placeholder, it is a bug
+ * waiting to reach a trader.
+ */
 const COINS: { coin: string; basePrice: number }[] = [
   { coin: "BTC", basePrice: 97800 },
   { coin: "ETH", basePrice: 3410 },
@@ -31,7 +42,6 @@ const COINS: { coin: string; basePrice: number }[] = [
   { coin: "LINK", basePrice: 21.4 },
   { coin: "ARB", basePrice: 0.91 },
   { coin: "OP", basePrice: 1.84 },
-  { coin: "MATIC", basePrice: 0.52 },
   { coin: "DOT", basePrice: 6.85 },
   { coin: "ATOM", basePrice: 6.12 },
   { coin: "NEAR", basePrice: 4.95 },
@@ -42,7 +52,15 @@ const COINS: { coin: string; basePrice: number }[] = [
   { coin: "INJ", basePrice: 22.3 },
 ];
 
-const EXCHANGES = ["Binance", "Bybit", "OKX", "Bitget", "KuCoin"] as const;
+/**
+ * Venues that list every coin above, spot and perp, and that TradingView covers.
+ *
+ * Bitget and KuCoin were dropped from the mock for exactly that reason — the
+ * generator was pairing coins with exchanges at random and inventing listings
+ * that do not exist. When the backend ships, the exchange comes from the venue
+ * the signal was actually found on, and this list disappears.
+ */
+const EXCHANGES = ["Binance", "Bybit", "OKX"] as const;
 /** Real roster (constants/strategies.ts) — directional strategies only. */
 const STRATEGIES = BUILT_IN_STRATEGIES.map((s) => s.name);
 const SPOT_ONLY = new Set(SPOT_ONLY_STRATEGY_NAMES);

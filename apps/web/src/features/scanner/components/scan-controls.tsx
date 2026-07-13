@@ -16,7 +16,8 @@ import { useStrategyStore } from "@/features/strategies/stores/strategy-store";
 import { cn } from "@/lib/utils";
 import type { ScanRequest } from "@/features/scanner/data/mock-scan";
 
-const EXCHANGES = ["Binance", "Bybit", "OKX", "Bitget", "KuCoin"];
+/** Must match the venues signals are actually found on (mock-opportunities). */
+const EXCHANGES = ["Binance", "Bybit", "OKX"];
 
 /**
  * The scanner's controls.
