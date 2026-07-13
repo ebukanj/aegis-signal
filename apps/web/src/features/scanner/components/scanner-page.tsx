@@ -1,50 +1,41 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ErrorState } from "@/components/shared/error-state";
 import { PageHeader } from "@/components/shared/page-header";
-import { OpportunityCards } from "@/features/scanner/components/opportunity-cards";
-import { OpportunityTable } from "@/features/scanner/components/opportunity-table";
-import { PreviewDrawer } from "@/features/scanner/components/preview-drawer";
-import { ScannerSummary } from "@/features/scanner/components/scanner-summary";
-import { ScannerToolbar } from "@/features/scanner/components/scanner-toolbar";
-import {
-  useFilteredOpportunities,
-  useOpportunities,
-} from "@/features/scanner/hooks/use-opportunities";
-import {
-  DEFAULT_SCANNER_FILTERS,
-  type Opportunity,
-  type ScannerFilters,
-} from "@/features/scanner/types";
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { Skeleton } from "@/components/ui/skeleton";
+import { scannerApi } from "@/features/scanner/api/scanner-api";
+import { RejectionLog } from "@/features/scanner/components/rejection-log";
+import { ScanStatus } from "@/features/scanner/components/scan-status";
+import { StrategyRuns } from "@/features/scanner/components/strategy-runs";
 
 /**
- * Market Scanner workspace. Answers:
- * "What are the best opportunities in the market right now?"
+ * Market Scanner — the evidence, not the shop window.
+ *
+ * The old page was eight metric cards and a ranked table of opportunities. But
+ * the ranked opportunities already live on the Signals page, which is where a
+ * trader acts. Repeating them here made the Scanner a second, noisier Signals.
+ *
+ * Its real job is to answer the question a quiet day provokes:
+ *
+ *     "Is this thing even working?"
+ *
+ * So it shows what the scan looked at, which strategies are live (and which are
+ * deliberately switched off, and why), and — most importantly — every setup it
+ * threw away and the exact number it failed on. Silence without evidence is
+ * indistinguishable from a broken feed.
  */
 export function ScannerPage() {
-  const [filters, setFilters] = useState<ScannerFilters>(
-    DEFAULT_SCANNER_FILTERS,
-  );
-  const [preview, setPreview] = useState<Opportunity | null>(null);
-
-  const { data, isPending, isError, refetch, isRefetching, dataUpdatedAt } =
-    useOpportunities();
-
-  // Debounce only the search text so typing never re-filters on each keystroke
-  const debouncedSearch = useDebouncedValue(filters.search, 250);
-  const effectiveFilters = useMemo(
-    () => ({ ...filters, search: debouncedSearch }),
-    [filters, debouncedSearch],
-  );
-  const filtered = useFilteredOpportunities(data, effectiveFilters);
+  const { data, isPending, isError, refetch } = useQuery({
+    queryKey: ["scanner", "run"],
+    queryFn: () => scannerApi.getScanRun(),
+  });
 
   if (isError) {
     return (
       <ErrorState
         title="Scanner unavailable"
-        description="The opportunity feed could not be loaded."
+        description="The scan result could not be loaded."
         onRetry={() => refetch()}
         className="min-h-[50vh]"
       />
@@ -52,47 +43,35 @@ export function ScannerPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-5 pb-16">
       <PageHeader
         title="Market Scanner"
-        description="Ranked opportunities that passed strategy evaluation and risk validation."
+        description="What the scan found — and what it rejected."
       />
 
-      <ScannerSummary
-        opportunities={data}
-        loading={isPending}
-        updatedAt={dataUpdatedAt || undefined}
-      />
+      {isPending || !data ? (
+        <LoadingState />
+      ) : (
+        <>
+          <ScanStatus scan={data} />
+          <StrategyRuns runs={data.strategyRuns} />
+          <RejectionLog rejections={data.rejections} />
+        </>
+      )}
+    </div>
+  );
+}
 
-      <ScannerToolbar
-        filters={filters}
-        onFiltersChange={setFilters}
-        onRefresh={() => refetch()}
-        refreshing={isRefetching}
-      />
-
-      {/* Desktop/tablet: table · Mobile: cards */}
-      <div className="hidden md:block">
-        <OpportunityTable
-          opportunities={filtered}
-          loading={isPending}
-          onPreview={setPreview}
-        />
+function LoadingState() {
+  return (
+    <div className="flex flex-col gap-5">
+      <Skeleton className="h-12 w-full" />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-28 w-full" />
+        ))}
       </div>
-      <div className="md:hidden">
-        <OpportunityCards
-          opportunities={filtered}
-          loading={isPending}
-          onPreview={setPreview}
-        />
-      </div>
-
-      <PreviewDrawer
-        opportunity={preview}
-        onOpenChange={(open) => {
-          if (!open) setPreview(null);
-        }}
-      />
+      <Skeleton className="h-96 w-full" />
     </div>
   );
 }
