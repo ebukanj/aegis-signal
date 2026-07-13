@@ -3,7 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-07-12
 **Supersedes:** nothing. **Amends:** repository structure in [05-SOLUTION_ARCHITECTURE](../05-SOLUTION_ARCHITECTURE.md) §12.
-**Related:** [AGENTS.md](../../AGENTS.md) §2 (ownership map), §4 (current reality), [ADR-021](ADR-021-confluence-prime-signals-execution-guidance.md), [BACKEND_NOTES](../BACKEND_NOTES.md)
+**Related:** [AGENTS.md](../../AGENTS.md) §2 (ownership map), §4 (current reality), [ADR-021](ADR-021-confluence-prime-signals-execution-guidance.md), [07-BACKEND_REQUIREMENTS](../07-BACKEND_REQUIREMENTS.md)
 
 ---
 
@@ -26,7 +26,7 @@ This produced three problems, discovered during a documentation audit:
    None of it existed.
 3. **The mocks quietly became the source of truth.** The DTO shapes lived in
    three hand-maintained files under `apps/web/src/features/*/types.ts`.
-   [BACKEND_NOTES](../BACKEND_NOTES.md) named this the "mock parity contract" and asked the future
+   [07-BACKEND_REQUIREMENTS](../07-BACKEND_REQUIREMENTS.md) named this the "mock parity contract" and asked the future
    backend to match them — an honest stopgap, but one enforced by nothing
    except memory. The moment `apps/api` shipped its own DTOs, the two
    definitions would drift, silently, in a system whose entire value rests on

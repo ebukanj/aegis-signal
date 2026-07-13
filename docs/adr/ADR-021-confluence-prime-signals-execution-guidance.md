@@ -73,6 +73,6 @@ deterministic scoring inputs — it never bypasses the pipeline.
 - Notification Center consumes only Prime events by default.
 - Backtesting must be able to replay the confluence + prime stages.
 - Frontend (Milestones 02–04) renders these fields now from mock data shaped
-  exactly like the future DTOs; see [BACKEND_NOTES.md](../BACKEND_NOTES.md) for
+  exactly like the future DTOs; see [07-BACKEND_REQUIREMENTS](../07-BACKEND_REQUIREMENTS.md) for
   the backend obligations this creates. Those DTO shapes are now enforced by
   `packages/contracts` ([ADR-022](ADR-022-contract-first-backend.md)).

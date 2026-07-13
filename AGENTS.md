@@ -69,7 +69,7 @@ owner — do not re-derive it, and do not copy it.
 | **Database schema** | `packages/database/prisma/schema.prisma` (code) | migrate, never hand-edit tables |
 | **Trade validation, `marketType`, `suggestedLeverage`, position sizing** | **The Risk Engine** (code) | consume its output, never compute your own |
 | **Confidence scores** | Confidence Engine, calibrated against the ledger | display, never fabricate |
-| **Backend obligations owed by frontend work** | [docs/BACKEND_NOTES.md](docs/BACKEND_NOTES.md) | append when you create one |
+| **What the backend must build, and must never do** | [docs/07-BACKEND_REQUIREMENTS.md](docs/07-BACKEND_REQUIREMENTS.md) | implement; append when frontend work creates an obligation |
 
 **Conflict rule:** when two sources disagree, the owner in this table wins.
 When the *ownership itself* is unclear, **this file wins**, and you must update
@@ -88,7 +88,8 @@ Read in this order. Never skip the sequence.
 5. [docs/04-PROJECT_PRD.md](docs/04-PROJECT_PRD.md) — what it must do
 6. [docs/05-SOLUTION_ARCHITECTURE.md](docs/05-SOLUTION_ARCHITECTURE.md) — how it fits together
 7. [docs/06-STRATEGIES.md](docs/06-STRATEGIES.md) — the trading logic
-8. [docs/adr/](docs/adr/) — decisions already made (read before proposing a new one)
+8. [docs/07-BACKEND_REQUIREMENTS.md](docs/07-BACKEND_REQUIREMENTS.md) — what `apps/api` must build, and must never do
+9. [docs/adr/](docs/adr/) — decisions already made (read before proposing a new one)
 
 ---
 
@@ -99,17 +100,28 @@ system. Keep it accurate; a stale reality section is a defect.
 
 | Area | Status |
 |---|---|
-| `apps/web` | **Built.** Next.js 15 frontend, rendering **mock data**. Typechecks, lints, and builds clean. Decongested to five workspaces — Backtesting, Paper Trading and the Dashboard were removed ([ADR-023](docs/adr/ADR-023-strategy-as-document.md)). |
-| Strategies | **11 codenames → 5 plain-English documents.** A strategy is now data, not code. None is implemented or validated; all are UNPROVEN. |
-| `packages/contracts` | **Built and tested.** The one definition of every DTO and domain enum. |
-| `apps/api` | **Does not exist.** The backend has not been started. This is deliberate — see [ADR-022](docs/adr/ADR-022-contract-first-backend.md). |
+| `apps/web` | **Built and polished.** Next.js 15, rendering **mock data**. Zero lint errors, zero warnings, strict TypeScript, build green. Seven workspaces: Signals · Scanner · Strategies · Insights · Track Record · Notifications · Settings (+ Admin). |
+| `packages/contracts` | **Built and tested.** 34 tests. The one definition of every DTO, domain enum, indicator, pattern and invariant. |
+| Strategies | **Six plain-English documents**, not code ([ADR-023](docs/adr/ADR-023-strategy-as-document.md)). Vocabulary covers 47 indicators, divergence, market structure and chart patterns ([ADR-024](docs/adr/ADR-024-earned-confidence-and-the-pattern-vocabulary.md)). **None is implemented or validated. All are UNPROVEN.** |
+| `apps/api` | **Does not exist.** Deliberate — see [ADR-022](docs/adr/ADR-022-contract-first-backend.md). Everything it must do is specified in [docs/07-BACKEND_REQUIREMENTS.md](docs/07-BACKEND_REQUIREMENTS.md). |
 | `packages/database` | **Not built.** No Prisma schema yet. |
-| Market Intelligence / Strategy / Risk / Signal engines | **Not built.** No live market data flows anywhere. |
-| Backtesting / Paper Trading / Analytics / Notifications / AI | **Not built.** |
+| Market data · Indicator · Pattern · Strategy · Risk · Signal · Confidence · Calibration engines | **Not built.** No market data flows anywhere. |
+| Notifications · AI layer | **Not built.** |
 
-**No strategy from [docs/06-STRATEGIES.md](docs/06-STRATEGIES.md) has been implemented, backtested, or
-validated. Every expectancy figure in that document is a hypothesis, not a
-result.** Do not describe this platform as producing signals until it does.
+### The two things the frontend fakes, and must stop faking
+
+1. **Confidence.** Mock scores are assembled in the honest *shape*
+   (`CalibratedConfidence`), but the numbers are invented and every one is
+   labelled **UNCALIBRATED**. The Confidence Engine and the Calibration job own
+   the real thing.
+2. **Market data.** Prices, indicators, patterns and live-price ticks are
+   simulated. **No component may ever compute these** — the frontend renders,
+   it never decides (§6). A faked number in `apps/web` is exactly how this
+   platform once shipped a random "91%".
+
+**No strategy in [docs/06-STRATEGIES.md](docs/06-STRATEGIES.md) has been implemented or validated. Every
+expectancy figure there is a hypothesis, not a result.** Do not describe this
+platform as producing signals until it does.
 
 ---
 

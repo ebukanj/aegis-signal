@@ -238,7 +238,7 @@ exists precisely to **lay the foundation the backend then fills**.
 
 ### Backend later — the engines, recorded now so they are not forgotten
 
-Appended to [BACKEND_NOTES](../BACKEND_NOTES.md):
+Appended to [07-BACKEND_REQUIREMENTS](../07-BACKEND_REQUIREMENTS.md):
 
 1. **Indicator engine** — computes every tier-1–4 indicator from OHLCV. Pure,
    deterministic, unit-testable against known reference values.

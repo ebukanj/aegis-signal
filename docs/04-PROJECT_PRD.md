@@ -188,18 +188,31 @@ Version 1.0 is considered successful when users can:
 
 ## 12. Scope
 
+> **Amended by [ADR-023](adr/ADR-023-strategy-as-document.md) and [ADR-024](adr/ADR-024-earned-confidence-and-the-pattern-vocabulary.md).** Backtesting, Paper Trading and the
+> Dashboard were **removed**: traders validate in TradingView or on a live
+> exchange, and a page that summarises other pages is noise. The Analytics
+> Center was gutted and rebuilt as **Track Record**. See [AGENTS.md §4](../AGENTS.md) for what
+> actually exists.
+
 ### Version 1.0 includes:
 - Multi-exchange market scanning.
-- Strategy engine.
-- Signal engine.
-- Risk engine.
-- Notification engine.
-- Dashboard.
-- Analytics.
-- Backtesting.
-- Paper trading.
-- AI-assisted explanations.
+- Strategy engine — **one evaluator reading strategy documents** ([ADR-023](adr/ADR-023-strategy-as-document.md)).
+- Indicator engine and pattern engine ([ADR-024](adr/ADR-024-earned-confidence-and-the-pattern-vocabulary.md)).
+- Risk engine — the veto.
+- Signal engine — confluence and the Prime budget.
+- Confidence engine + calibration ([ADR-024](adr/ADR-024-earned-confidence-and-the-pattern-vocabulary.md)).
+- The outcome ledger.
+- Insights — news, social, fundamentals, and Risk Flags.
+- Notification engine — Prime only.
+- Track Record — the reliability curve.
 - Administrative console.
+
+### Explicitly NOT in Version 1.0:
+- **Backtesting laboratory** — removed. Historical replay survives only as an
+  internal calibration engine the user never operates.
+- **Paper trading** — removed. The ledger records outcomes automatically.
+- **Dashboard** — removed. Signals is the home page.
+- **Automated execution** — Version 2.0.
 
 ### Future versions will introduce:
 - Automated trade execution.
@@ -465,18 +478,23 @@ The Aegis Signal platform consists of twelve primary subsystems.
 ---
 
 ## 16. Product Modules (User Interface)
-The interface is organized into major workspaces.
 
-* **Dashboard**: Platform overview.
-* **Market Scanner**: Live opportunity discovery.
-* **Signals**: Institutional-grade signal feed.
-* **Strategy Laboratory**: Strategy configuration and health.
-* **Analytics Center**: Performance dashboards.
-* **Backtesting Lab**: Historical validation.
-* **Paper Trading**: Virtual trading environment.
-* **Notification Center**: Alert management.
-* **Administration**: Platform management.
-* **Settings**: User preferences.
+*Amended by [ADR-023](adr/ADR-023-strategy-as-document.md) / [ADR-024](adr/ADR-024-earned-confidence-and-the-pattern-vocabulary.md): ten workspaces became seven. What follows is
+what the frontend actually ships.*
+
+| Workspace | The one question it answers |
+|---|---|
+| **Signals** *(home)* | What should I trade today? |
+| **Market Scanner** | What does the scan find with the rules *I* pick — and what did it reject? |
+| **Strategies** | What are the rules, and are they mine to change? |
+| **Insights** | What is happening — news, social, fundamentals — and what is blocked? |
+| **Track Record** | Have these signals actually made money, and when we say 90 are we right 90% of the time? |
+| **Notifications** | Where do Prime signals get delivered? |
+| **Settings** *(+ Administration)* | Preferences, exchanges, platform management. |
+
+**Removed:** Dashboard (a page summarising other pages), Backtesting Lab and
+Paper Trading (jobs traders do better elsewhere), the Analytics Center (gutted
+and rebuilt as Track Record).
 
 ---
 

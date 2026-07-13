@@ -25,13 +25,27 @@ Then, in order:
 | 4 | [docs/04-PROJECT_PRD.md](docs/04-PROJECT_PRD.md) | Requirements and roadmap |
 | 5 | [docs/05-SOLUTION_ARCHITECTURE.md](docs/05-SOLUTION_ARCHITECTURE.md) | System design |
 | 6 | [docs/06-STRATEGIES.md](docs/06-STRATEGIES.md) | Trading logic |
-| 7 | [docs/adr/](docs/adr/) | Decisions already made |
+| 7 | [docs/07-BACKEND_REQUIREMENTS.md](docs/07-BACKEND_REQUIREMENTS.md) | What the backend must build — **start here for `apps/api`** |
+| 8 | [docs/adr/](docs/adr/) | Decisions already made |
 
 ## Status
 
-`apps/web` is built and renders **mock data**. The backend — market data,
-strategies, risk, signals — **does not exist yet**. The platform does not
-produce signals, and no strategy has been backtested.
+**The frontend is complete, polished, and honest.** `apps/web` renders **mock
+data**: zero lint errors, zero warnings, strict TypeScript, build green.
+`packages/contracts` holds every DTO, enum, indicator, pattern and invariant —
+34 tests passing.
+
+**The backend does not exist.** No market data flows anywhere. The platform does
+not produce signals, and no strategy has been validated.
+
+The frontend fakes exactly two things, deliberately and visibly:
+
+1. **Confidence scores** — assembled in the honest shape, but the numbers are
+   invented and every one is stamped **UNCALIBRATED** on screen.
+2. **Market data** — prices, indicators, patterns and live ticks are simulated.
+
+Replacing both is the backend's job, specified end-to-end in
+**[docs/07-BACKEND_REQUIREMENTS.md](docs/07-BACKEND_REQUIREMENTS.md)**.
 
 [AGENTS.md §4](AGENTS.md) holds the authoritative status. Trust it over any
 other document.
