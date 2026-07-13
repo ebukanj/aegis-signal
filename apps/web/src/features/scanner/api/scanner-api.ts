@@ -2,8 +2,8 @@ import {
   mockOpportunities,
   scannerFilterOptions,
 } from "@/features/scanner/data/mock-opportunities";
-import { getMockScanRun } from "@/features/scanner/data/mock-scan";
-import type { ScanRun } from "@/features/scanner/data/mock-scan";
+import { runMockScan } from "@/features/scanner/data/mock-scan";
+import type { ScanRequest, ScanResult } from "@/features/scanner/data/mock-scan";
 import type { Opportunity } from "@/features/scanner/types";
 
 /**
@@ -15,13 +15,11 @@ const simulate = <T>(data: T, delayMs = 600): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(data), delayMs));
 
 export const scannerApi = {
-  /** The scan itself: what was checked, what passed, and what was rejected. */
-  getScanRun: (): Promise<ScanRun> => simulate(getMockScanRun(), 550),
+  /** Run the scan the user asked for and return the ranked result. */
+  runScan: (request: ScanRequest): Promise<ScanResult> =>
+    simulate(runMockScan(request), 1400),
 
-  /**
-   * The ranked opportunity set. Consumed by the Signals workspace, which is
-   * where a trader acts on them.
-   */
+  /** The ranked set the Signals workspace consumes. */
   getOpportunities: (): Promise<Opportunity[]> =>
     simulate(mockOpportunities, 650),
 

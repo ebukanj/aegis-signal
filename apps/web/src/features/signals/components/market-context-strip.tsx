@@ -1,4 +1,9 @@
 import { StatusBadge } from "@/components/shared/status-badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { REGIME_META, RISK_META } from "@/constants/domain";
 import { formatRelativeTime } from "@/lib/format";
 import type { ScanContext } from "@/features/signals/data/mock-today";
@@ -22,9 +27,20 @@ export function MarketContextStrip({
 
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border bg-card px-4 py-3 text-sm">
+      {/* "Regime" is quant jargon and never appears on screen. The label is
+          plain English; the explanation is one hover away. */}
       <div className="flex items-center gap-2">
         <span className="label-caps text-muted-foreground">Market</span>
-        <StatusBadge status={regime.status}>{regime.label}</StatusBadge>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="cursor-help">
+              <StatusBadge status={regime.status}>{regime.label}</StatusBadge>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            {regime.meaning}
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="flex items-center gap-2">

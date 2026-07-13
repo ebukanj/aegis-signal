@@ -1,77 +1,106 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { ErrorState } from "@/components/shared/error-state";
+import { useState } from "react";
+import { Radar } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BUILT_IN_STRATEGIES } from "@/constants/strategies";
 import { scannerApi } from "@/features/scanner/api/scanner-api";
-import { RejectionLog } from "@/features/scanner/components/rejection-log";
-import { ScanStatus } from "@/features/scanner/components/scan-status";
-import { StrategyRuns } from "@/features/scanner/components/strategy-runs";
+import { ScanControls } from "@/features/scanner/components/scan-controls";
+import { ScanResults } from "@/features/scanner/components/scan-results";
+import { SignalPanel } from "@/features/signals/components/signal-panel";
+import type { ScanRequest, ScanResult } from "@/features/scanner/data/mock-scan";
+import type { Opportunity } from "@/features/scanner/types";
 
 /**
- * Market Scanner — the evidence, not the shop window.
+ * Market Scanner — a tool you operate.
  *
- * The old page was eight metric cards and a ranked table of opportunities. But
- * the ranked opportunities already live on the Signals page, which is where a
- * trader acts. Repeating them here made the Scanner a second, noisier Signals.
+ * The line between this and Signals is the thing that was confused before:
  *
- * Its real job is to answer the question a quiet day provokes:
+ *   SIGNALS  the machine decides. It hands you the few trades worth taking.
+ *   SCANNER  you decide. You pick the rules and go looking.
  *
- *     "Is this thing even working?"
- *
- * So it shows what the scan looked at, which strategies are live (and which are
- * deliberately switched off, and why), and — most importantly — every setup it
- * threw away and the exact number it failed on. Silence without evidence is
- * indistinguishable from a broken feed.
+ * So this page does nothing until you tell it to. That is not a limitation —
+ * it is what makes it a scanner rather than a second, noisier feed.
  */
 export function ScannerPage() {
-  const { data, isPending, isError, refetch } = useQuery({
-    queryKey: ["scanner", "run"],
-    queryFn: () => scannerApi.getScanRun(),
+  const [request, setRequest] = useState<ScanRequest>({
+    strategies: BUILT_IN_STRATEGIES.filter((s) => s.enabled).map((s) => s.name),
+    market: "ALL",
+    exchange: "ALL",
   });
 
-  if (isError) {
-    return (
-      <ErrorState
-        title="Scanner unavailable"
-        description="The scan result could not be loaded."
-        onRetry={() => refetch()}
-        className="min-h-[50vh]"
-      />
-    );
-  }
+  const [result, setResult] = useState<ScanResult | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [selected, setSelected] = useState<Opportunity | null>(null);
+
+  const scan = async () => {
+    setScanning(true);
+    try {
+      setResult(await scannerApi.runScan(request));
+    } finally {
+      setScanning(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-5 pb-16">
       <PageHeader
         title="Market Scanner"
-        description="What the scan found — and what it rejected."
+        description="Scan the market with the rules you choose."
       />
 
-      {isPending || !data ? (
-        <LoadingState />
-      ) : (
-        <>
-          <ScanStatus scan={data} />
-          <StrategyRuns runs={data.strategyRuns} />
-          <RejectionLog rejections={data.rejections} />
-        </>
+      <ScanControls
+        request={request}
+        onChange={setRequest}
+        onScan={scan}
+        scanning={scanning}
+      />
+
+      {scanning && <ScanningState />}
+
+      {!scanning && result && (
+        <ScanResults result={result} onSelect={setSelected} />
       )}
+
+      {!scanning && !result && <IdleState />}
+
+      <SignalPanel signal={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }
 
-function LoadingState() {
+/** What a first-time visitor sees. It has to teach the page in two sentences. */
+function IdleState() {
   return (
-    <div className="flex flex-col gap-5">
-      <Skeleton className="h-12 w-full" />
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-28 w-full" />
-        ))}
+    <Card className="flex flex-col items-center gap-3 border-dashed px-6 py-14 text-center">
+      <div className="flex size-12 items-center justify-center rounded-lg border bg-card text-muted-foreground">
+        <Radar className="size-6" aria-hidden />
       </div>
-      <Skeleton className="h-96 w-full" />
+      <h2 className="text-lg font-semibold tracking-tight">
+        Nothing scanned yet.
+      </h2>
+      <p className="max-w-md text-sm text-muted-foreground">
+        Choose the strategies you want to hunt with above, then press{" "}
+        <span className="font-medium text-foreground">Scan the market</span>.
+        You will get the ten best setups the rules can find right now, ranked.
+      </p>
+      <p className="max-w-md text-xs text-muted-foreground">
+        Looking for the trades the platform picked for you instead? Those are on
+        the Signals page — this one is for going hunting yourself.
+      </p>
+    </Card>
+  );
+}
+
+function ScanningState() {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        Checking 247 pairs across 5 exchanges…
+      </p>
+      <Skeleton className="h-64 w-full" />
     </div>
   );
 }

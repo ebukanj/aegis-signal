@@ -22,16 +22,58 @@ type BadgeStatus =
   | "long"
   | "short";
 
+/**
+ * What kind of market are we in right now?
+ *
+ * The code calls this the "regime" — quant jargon, and it stays in the code and
+ * the docs where it belongs. It must never appear on screen: if the reader has
+ * to ask what a word means, the word is wrong.
+ *
+ * This matters more than any single indicator, because the same setup is a gift
+ * or a trap depending on it. A breakout in an uptrend is the move. The identical
+ * breakout in a sideways market is a trap that sucks you in and reverses. So the
+ * market condition decides which strategies are even allowed to fire.
+ */
 export const REGIME_META: Record<
   MarketRegime,
-  { label: string; status: BadgeStatus }
+  { label: string; status: BadgeStatus; meaning: string }
 > = {
-  TRENDING_BULL: { label: "Trending Bull", status: "success" },
-  TRENDING_BEAR: { label: "Trending Bear", status: "error" },
-  RANGE: { label: "Ranging", status: "info" },
-  TRANSITION: { label: "Transitioning", status: "warning" },
-  HIGH_VOLATILITY: { label: "High Volatility", status: "warning" },
-  RISK_OFF: { label: "Risk-Off", status: "error" },
+  TRENDING_BULL: {
+    label: "Uptrend",
+    status: "success",
+    meaning:
+      "Price is climbing steadily. Breakouts and pullback-buys work here; fading the move does not.",
+  },
+  TRENDING_BEAR: {
+    label: "Downtrend",
+    status: "error",
+    meaning:
+      "Price is falling steadily. Short setups work here; catching the falling knife does not.",
+  },
+  RANGE: {
+    label: "Sideways",
+    status: "info",
+    meaning:
+      "Bouncing between a floor and a ceiling, going nowhere. Reversals work here — breakouts are suppressed, because most of them are traps.",
+  },
+  TRANSITION: {
+    label: "Turning",
+    status: "warning",
+    meaning:
+      "The market is changing character and the direction is not yet clear. Everything runs at half size.",
+  },
+  HIGH_VOLATILITY: {
+    label: "Volatile",
+    status: "warning",
+    meaning:
+      "Violent moves in both directions. Stops get hit on noise, so most strategies stand down.",
+  },
+  RISK_OFF: {
+    label: "Risk-off",
+    status: "error",
+    meaning:
+      "Something broke — a hack, a depeg, a crash. Every signal is blocked. Protecting capital outranks finding trades.",
+  },
 };
 
 export const RISK_META: Record<

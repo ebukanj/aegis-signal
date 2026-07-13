@@ -6,7 +6,7 @@ import { ConfidenceBadge } from "@/components/shared/confidence-badge";
 import { DirectionBadge } from "@/components/shared/direction-badge";
 import { RISK_META } from "@/constants/domain";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { formatPrice, formatRelativeTime } from "@/lib/format";
+import { formatPrice, formatSignalTime } from "@/lib/format";
 import { buildTradeInstruction } from "@/lib/trade-instruction";
 import { cn } from "@/lib/utils";
 import type { Opportunity } from "@/features/scanner/types";
@@ -117,8 +117,10 @@ export function SignalCard({
             </>
           )}
         </span>
-        <span className="ml-auto">
-          {formatRelativeTime(signal.generatedAt)}
+        {/* The exact clock time. A signal is a time-critical instruction — "2h
+            ago" does not tell a trader whether they are early or too late. */}
+        <span className="ml-auto font-numeric">
+          {formatSignalTime(signal.generatedAt)}
         </span>
       </div>
     </Card>

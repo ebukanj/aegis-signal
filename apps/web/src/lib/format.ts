@@ -68,6 +68,26 @@ export function formatDateTime(iso: string): string {
   }).format(new Date(iso));
 }
 
+/**
+ * Exact publication time, to the second, with the timezone named.
+ * e.g. "13 Jul, 14:32:05 GMT+1"
+ *
+ * A signal is a time-critical instruction: entry prices go stale, and "2 hours
+ * ago" does not tell a trader whether they are early or too late. Anywhere a
+ * signal is published, show the real clock time.
+ */
+export function formatSignalTime(iso: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZoneName: "short",
+  }).format(new Date(iso));
+}
+
 export function formatShortDate(iso: string): string {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",

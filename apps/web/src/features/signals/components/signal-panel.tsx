@@ -15,10 +15,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ConfidenceBadge } from "@/components/shared/confidence-badge";
 import { DirectionBadge } from "@/components/shared/direction-badge";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { RISK_META } from "@/constants/domain";
-import { formatPrice } from "@/lib/format";
+import { REGIME_META, RISK_META } from "@/constants/domain";
+import { formatPrice, formatSignalTime } from "@/lib/format";
 import { buildTradeInstruction } from "@/lib/trade-instruction";
 import { useSignalDetail } from "@/features/signals/hooks/use-signal-detail";
+import { CopySignalButton } from "@/features/signals/components/copy-signal-button";
 import { PositionCalculator } from "@/features/signals/components/position-calculator";
 import { StrategyExplanation } from "@/features/signals/components/strategy-explanation";
 import type { Opportunity } from "@/features/scanner/types";
@@ -28,8 +29,7 @@ import type { Opportunity } from "@/features/scanner/types";
  *
  * Clicking a signal must not navigate away from the list — a trader is
  * comparing today's handful of trades, and losing the list to read one of them
- * is the wrong trade-off. The full report still exists at /signals/[id] for
- * deep links and sharing.
+ * is the wrong trade-off. The full report still exists at /signals/[id].
  */
 export function SignalPanel({
   signal,
@@ -53,11 +53,13 @@ export function SignalPanel({
 function PanelBody({ signal }: { signal: Opportunity }) {
   const { data, isPending, isError } = useSignalDetail(signal.id);
   const risk = RISK_META[signal.riskLevel];
+  const market = REGIME_META[signal.regime];
   const detail = data?.detail;
 
   return (
     <>
-      <SheetHeader className="gap-3 border-b">
+      {/* pr-12 keeps the badges clear of the sheet's close button */}
+      <SheetHeader className="gap-3 border-b pr-12">
         <div className="flex flex-wrap items-center gap-2">
           {signal.isPrime && (
             <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
@@ -67,25 +69,31 @@ function PanelBody({ signal }: { signal: Opportunity }) {
           )}
           <SheetTitle className="text-lg">{signal.pair}</SheetTitle>
           <DirectionBadge direction={signal.direction} />
-          <div className="ml-auto flex items-center gap-2">
-            <StatusBadge status={risk.status}>{risk.label}</StatusBadge>
-            <ConfidenceBadge confidence={signal.confidence} />
-          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <ConfidenceBadge confidence={signal.confidence} />
+          <StatusBadge status={risk.status}>{risk.label} risk</StatusBadge>
+          <StatusBadge status={market.status}>{market.label}</StatusBadge>
         </div>
 
         <SheetDescription className="text-sm leading-relaxed text-foreground">
           {buildTradeInstruction(signal)}
         </SheetDescription>
+
+        <div className="flex items-center justify-between gap-3">
+          <p className="font-numeric text-xs text-muted-foreground">
+            Published {formatSignalTime(signal.generatedAt)}
+          </p>
+          <CopySignalButton signal={signal} />
+        </div>
       </SheetHeader>
 
       <div className="space-y-4 p-4">
         {/* What proves it wrong — first, not last. */}
         <Card className="gap-2 border-destructive/30 bg-destructive/[0.03] p-4">
           <div className="flex items-center gap-2">
-            <TriangleAlert
-              className="size-4 text-destructive"
-              aria-hidden
-            />
+            <TriangleAlert className="size-4 text-destructive" aria-hidden />
             <h3 className="text-sm font-semibold tracking-tight">
               What proves this wrong
             </h3>
