@@ -82,7 +82,21 @@ export const useStrategyStore = create<StrategyState>()(
 
       reset: () => set({ strategies: BUILT_IN_STRATEGIES }),
     }),
-    { name: "aegis-strategies" },
+    {
+      name: "aegis-strategies",
+      /**
+       * Bumped for ADR-024. The vocabulary changed shape — conditions gained a
+       * `kind` discriminator, and patterns arrived — so a strategy saved under
+       * the old schema can no longer be evaluated.
+       *
+       * We discard rather than attempt to translate. A half-migrated trading
+       * rule is worse than no rule: it would look valid, render plausibly, and
+       * mean something different from what its author intended. Better to reseed
+       * honestly than to silently mutate somebody's strategy.
+       */
+      version: 2,
+      migrate: () => ({ strategies: BUILT_IN_STRATEGIES }),
+    },
   ),
 );
 

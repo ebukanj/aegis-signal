@@ -38,6 +38,7 @@ export function StrategiesPage() {
       timeframe: "1h",
       entry: [
         {
+          kind: "comparison",
           left: { kind: "indicator", indicator: "rsi", period: 14 },
           op: "lt",
           right: { kind: "number", value: 30 },

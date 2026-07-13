@@ -92,6 +92,14 @@ const STRATEGY_SEEDS: Record<string, StrategySeed> = {
     },
     signalsPerWeek: 18, baseWinRate: 66, avgWinR: 0.9,
   },
+  "pattern-break": {
+    timeframes: ["4h", "1d"],
+    regimeFit: {
+      TRENDING_BULL: 80, TRANSITION: 70, HIGH_VOLATILITY: 62,
+      TRENDING_BEAR: 58, RANGE: 45, RISK_OFF: 28,
+    },
+    signalsPerWeek: 3.5, baseWinRate: 51, avgWinR: 2.7,
+  },
   "crowd-squeeze": {
     timeframes: ["4h", "1d"],
     regimeFit: {
@@ -195,8 +203,17 @@ function holdingHoursFor(
 }
 
 function buildStrategyRecords(slug: string): LedgerRecord[] {
-  const identity = BUILT_IN_STRATEGIES.find((s) => s.id === slug)!;
+  const identity = BUILT_IN_STRATEGIES.find((s) => s.id === slug);
   const seed = STRATEGY_SEEDS[slug];
+
+  // Fail loudly rather than crash a page with `undefined.status`. A missing seed
+  // means strategies.ts and this mock have drifted — say which one.
+  if (!identity || !seed) {
+    throw new Error(
+      `No ledger seed for strategy "${slug}" — strategies.ts and mock-ledger.ts have drifted.`,
+    );
+  }
+
   const rand = createSeededRandom(
     slug.split("").reduce((acc, ch) => acc + ch.charCodeAt(0) * 131, 977),
   );

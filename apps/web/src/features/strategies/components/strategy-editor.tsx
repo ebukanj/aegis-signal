@@ -40,6 +40,7 @@ import { ConditionRow } from "@/features/strategies/components/condition-row";
 
 function blankCondition(): Condition {
   return {
+    kind: "comparison",
     left: { kind: "indicator", indicator: "rsi", period: 14 },
     op: "lt",
     right: { kind: "number", value: 30 },
