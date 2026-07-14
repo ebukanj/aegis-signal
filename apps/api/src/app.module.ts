@@ -13,6 +13,7 @@ import { HealthModule } from "./health/health.module";
 import { MarketModule } from "./modules/market/market.module";
 import { IndicatorModule } from "./modules/indicators/indicator.module";
 import { PatternModule } from "./modules/patterns/pattern.module";
+import { RegimeModule } from "./modules/regime/regime.module";
 
 /**
  * The application.
@@ -81,6 +82,13 @@ import { PatternModule } from "./modules/patterns/pattern.module";
      * expressed as an indicator comparison, which is why this module exists.
      */
     PatternModule,
+
+    /*
+     * The regime is CONTEXT, not an indicator. It says what environment the market
+     * is in — and no strategy should ever be evaluated without knowing, because a
+     * rule that prints money in a trend gets shredded in a range.
+     */
+    RegimeModule,
 
     /*
      * Still to come, in pipeline order:

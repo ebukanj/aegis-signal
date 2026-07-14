@@ -70,6 +70,14 @@ const pattern = (
 export const BUILT_IN_STRATEGIES: StrategyDefinition[] = [
   {
     id: "breakout",
+    /*
+     * A breakout needs a market that can RUN. In a range, every breakout is a
+     * false one by construction — that is what a range IS: a place where breaks
+     * fail. This strategy in a range is not merely unprofitable, it is a machine
+     * for buying the top of every fake move.
+     */
+    regimes: ["TRENDING_BULL", "TRENDING_BEAR", "HIGH_VOLATILITY"],
+    avoidRegimes: ["RANGE", "RISK_OFF"],
     name: "Breakout",
     summary:
       "Price escapes a quiet range on heavy volume — the move that follows a squeeze.",
@@ -115,6 +123,13 @@ export const BUILT_IN_STRATEGIES: StrategyDefinition[] = [
 
   {
     id: "trend-pullback",
+    /*
+     * The clue is in the name: it needs a trend to pull back INTO. In a range a
+     * "pullback" is just the other side of the range, and buying it is buying a
+     * ceiling.
+     */
+    regimes: ["TRENDING_BULL", "TRENDING_BEAR"],
+    avoidRegimes: ["RANGE", "TRANSITION", "RISK_OFF"],
     name: "Trend Pullback",
     summary:
       "Buy the dip inside a confirmed uptrend — join strength, don't chase it.",
@@ -159,6 +174,14 @@ export const BUILT_IN_STRATEGIES: StrategyDefinition[] = [
 
   {
     id: "reversal",
+    /*
+     * Reversal is the mirror image of Breakout, and its avoid-list is the reason
+     * both exist. Fading a STRONG TREND is how accounts die: the strategy sells
+     * every new high, all the way up, and each loss looks like bad luck rather than
+     * a category error. It belongs in ranges and at exhaustion, never in a trend.
+     */
+    regimes: ["RANGE", "HIGH_VOLATILITY", "TRANSITION"],
+    avoidRegimes: ["TRENDING_BULL", "TRENDING_BEAR"],
     name: "Reversal",
     summary:
       "Fade a move that went too far, too fast — snap back toward the average.",
@@ -199,6 +222,12 @@ export const BUILT_IN_STRATEGIES: StrategyDefinition[] = [
 
   {
     id: "level-bounce",
+    /*
+     * Levels hold in a range and get obliterated in a trend. A trending market
+     * eats support like it is not there — which is precisely what "trending" means.
+     */
+    regimes: ["RANGE"],
+    avoidRegimes: ["TRENDING_BULL", "TRENDING_BEAR", "HIGH_VOLATILITY", "RISK_OFF"],
     name: "Level Bounce",
     summary:
       "Price rejects a level that has held before — trade the bounce off proven support or resistance.",
@@ -241,6 +270,12 @@ export const BUILT_IN_STRATEGIES: StrategyDefinition[] = [
 
   {
     id: "pattern-break",
+    /*
+     * Chart patterns need room to form and a market willing to follow through.
+     * They form in anything; they only RESOLVE when there is participation.
+     */
+    regimes: ["TRENDING_BULL", "TRENDING_BEAR", "TRANSITION"],
+    avoidRegimes: ["RISK_OFF"],
     name: "Pattern Break",
     summary:
       "A clean chart pattern completes and price breaks out of it — flags, wedges and triangles, traded on the break.",
@@ -277,6 +312,13 @@ export const BUILT_IN_STRATEGIES: StrategyDefinition[] = [
 
   {
     id: "crowd-squeeze",
+    /*
+     * A squeeze needs crowding, and crowding happens at extremes. Already DISABLED
+     * for want of a derivatives feed; the regime declaration is here so it works
+     * the day that feed lands, rather than being remembered then.
+     */
+    regimes: ["HIGH_VOLATILITY", "TRENDING_BULL", "TRENDING_BEAR"],
+    avoidRegimes: ["RANGE"],
     name: "Crowd Squeeze",
     summary:
       "Everyone is on one side, paying to stay there, and price has stopped rewarding them. Trade against the crowd.",

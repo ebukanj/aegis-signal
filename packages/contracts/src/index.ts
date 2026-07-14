@@ -38,6 +38,7 @@ export * from "./invariants";
 export * from "./market/market-data";
 export * from "./market/indicator-result";
 export * from "./market/pattern-result";
+export * from "./market/regime";
 
 /* ── Strategy — a strategy is a document, not code (ADR-023) ───────── */
 export * from "./strategy";

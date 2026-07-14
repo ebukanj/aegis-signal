@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  marketRegimeSchema,
   marketTypeSchema,
   riskLevelSchema,
   signalDirectionSchema,
@@ -421,6 +422,40 @@ export const strategyDefinitionSchema = z
     direction: z.union([signalDirectionSchema, z.literal("BOTH")]),
     market: marketTypeSchema,
     timeframe: timeframeSchema,
+
+    /**
+     * THE MARKETS THIS STRATEGY IS FOR. Declared by the strategy, not by the engine.
+     *
+     * A strategy that prints money in a trend gets shredded in a range, and the
+     * difference is the environment's fault rather than the strategy's. So every
+     * strategy states the environments it belongs in, and the Regime Engine simply
+     * publishes what the environment IS. It never decides which strategy suits it.
+     *
+     * ── Why this lives HERE and not in the Regime Engine ──
+     *
+     * The obvious alternative is a regime → strategy lookup table inside the engine.
+     * It is faster to write and it quietly breaks the one rule ADR-023 exists to
+     * protect: **a strategy is a document, and a user-created one takes the identical
+     * code path as a built-in.** A strategy the engine has never heard of could never
+     * appear in a hardcoded map, so every user strategy would be permanently
+     * invisible to the regime filter — or, worse, silently treated as compatible with
+     * everything.
+     *
+     * Empty means "no regime restriction", which is a real and legitimate answer for
+     * a strategy that genuinely does not care.
+     */
+    regimes: z.array(marketRegimeSchema).default([]),
+
+    /**
+     * Markets this strategy must NOT be run in, whatever else agrees.
+     *
+     * Separate from `regimes` rather than inferred as its complement, because those
+     * are different claims. "I work in a trend" is not the same as "I am actively
+     * dangerous in a range" — the first is a preference, the second is a veto. A
+     * mean-reversion strategy in a strong trend does not merely underperform; it
+     * sells every new high all the way up.
+     */
+    avoidRegimes: z.array(marketRegimeSchema).default([]),
 
     /** ALL of these must be true to enter. Never empty. */
     entry: z.array(conditionSchema).min(1),

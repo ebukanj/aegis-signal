@@ -36,6 +36,17 @@ export function StrategiesPage() {
       direction: "LONG",
       market: "PERPETUAL",
       timeframe: "1h",
+
+      /*
+       * A new strategy declares NO regime restriction, and that is the honest
+       * default. Guessing which markets a rule the user has not written yet belongs
+       * in would be the platform inventing an opinion on their behalf.
+       *
+       * Empty means "runs anywhere". The user narrows it deliberately or not at all.
+       */
+      regimes: [],
+      avoidRegimes: [],
+
       entry: [
         {
           kind: "comparison",
