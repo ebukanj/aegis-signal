@@ -1,0 +1,115 @@
+import { z } from "zod";
+
+/**
+ * The environment, validated.
+ *
+ * The application refuses to start if this fails. That is the point: a backend
+ * that boots with a missing DATABASE_URL and only discovers it under load has
+ * merely deferred the crash to the worst possible moment.
+ *
+ * NO SILENT DEFAULTS for anything that carries risk. A default port is harmless.
+ * A default JWT secret is a vulnerability with a friendly face — so secrets have
+ * no defaults and no fallbacks, and in production the schema refuses the
+ * development placeholders outright.
+ */
+
+const port = z.coerce.number().int().min(1).max(65535);
+
+/** A secret must be absent or real. "changeme" is worse than nothing. */
+const secret = z
+  .string()
+  .min(32, "A secret shorter than 32 characters is not a secret");
+
+export const envSchema = z
+  .object({
+    NODE_ENV: z
+      .enum(["development", "test", "production"])
+      .default("development"),
+
+    /* ── Application ───────────────────────────────────────────────── */
+    PORT: port.default(4000),
+    /** Public URL of the API. Never assume localhost (AGENTS.md §7). */
+    APP_URL: z.url(),
+    /** Comma-separated origins allowed to call the API. */
+    WEB_ORIGIN: z.string().min(1),
+    /** Everything the platform does is timestamped. It does it in UTC. */
+    TZ: z.string().default("UTC"),
+
+    /* ── Data ──────────────────────────────────────────────────────── */
+    DATABASE_URL: z.string().startsWith("postgresql://"),
+    REDIS_URL: z.string().startsWith("redis"),
+
+    /* ── Security ──────────────────────────────────────────────────── */
+    JWT_SECRET: secret,
+    JWT_EXPIRES: z.string().default("15m"),
+    /** Requests per minute, per IP. */
+    RATE_LIMIT: z.coerce.number().int().positive().default(120),
+
+    /* ── Observability ─────────────────────────────────────────────── */
+    LOG_LEVEL: z
+      .enum(["fatal", "error", "warn", "info", "debug", "trace"])
+      .default("info"),
+
+    /* ── Exchange (configured now, integrated later) ───────────────── */
+    CCXT_TIMEOUT: z.coerce.number().int().positive().default(15_000),
+    WS_HEARTBEAT: z.coerce.number().int().positive().default(30_000),
+
+    /* ── Integrations (optional until their milestone) ─────────────── */
+    TELEGRAM_TOKEN: z.string().optional(),
+    WHATSAPP_TOKEN: z.string().optional(),
+    OPENAI_API_KEY: z.string().optional(),
+    ANTHROPIC_API_KEY: z.string().optional(),
+    GOOGLE_API_KEY: z.string().optional(),
+  })
+  /**
+   * Production tightens the screws.
+   *
+   * A development placeholder that reaches production is not a typo, it is an
+   * incident. Fail at boot, loudly, where it is cheap.
+   */
+  .superRefine((env, ctx) => {
+    if (env.NODE_ENV !== "production") return;
+
+    const placeholders = ["changeme", "secret", "development", "test", "local"];
+    if (placeholders.some((p) => env.JWT_SECRET.toLowerCase().includes(p))) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["JWT_SECRET"],
+        message:
+          "JWT_SECRET looks like a development placeholder. Generate a real one.",
+      });
+    }
+
+    if (env.APP_URL.includes("localhost")) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["APP_URL"],
+        message: "APP_URL cannot point at localhost in production",
+      });
+    }
+  });
+
+export type Env = z.infer<typeof envSchema>;
+
+/**
+ * Validate on boot. Called by ConfigModule before anything else exists.
+ *
+ * Throws with every problem listed at once — a config error that reveals itself
+ * one variable per restart is a bad afternoon.
+ */
+export function validateEnv(raw: Record<string, unknown>): Env {
+  const result = envSchema.safeParse(raw);
+
+  if (!result.success) {
+    const problems = result.error.issues
+      .map((i) => `  · ${i.path.join(".") || "(root)"} — ${i.message}`)
+      .join("\n");
+
+    throw new Error(
+      `Invalid environment. The application will not start.\n\n${problems}\n\n` +
+        `See apps/api/.env.example for the full list.\n`,
+    );
+  }
+
+  return result.data;
+}

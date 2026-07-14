@@ -1,0 +1,27 @@
+// Aegis Signal — database schema.
+//
+// EMPTY ON PURPOSE. Milestone 01 builds the platform, not the product; no
+// application models exist yet (AGENTS.md §4).
+//
+// When they arrive, the entities are specified in docs/07-BACKEND_REQUIREMENTS.md §13.
+// One deserves emphasis now, because it shapes the schema:
+//
+//   `Strategy` is ONE table holding JSON documents — built-in and user-created
+//   alike. A strategy is a document, not code (ADR-023). That is why adding a
+//   strategy costs a row rather than a deployment, and it is why there must
+//   never be a second strategy table for "custom" ones.
+//
+// Two more that are easy to get wrong:
+//
+//   `Signal` is append-only. No signal is ever deleted (06-STRATEGIES §5).
+//   `SignalOutcome` is the ledger — the only thing in this platform that earns
+//   trust. Everything the confidence score claims is derived from it.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

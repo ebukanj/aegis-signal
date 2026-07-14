@@ -6,13 +6,34 @@
   "scripts": {
     "contracts": "pnpm --filter @aegis/contracts build",
     "dev": "pnpm contracts && pnpm --filter @aegis/web dev",
+    "dev:api": "pnpm contracts && pnpm --filter @aegis/api dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm contracts && pnpm -r typecheck",
-    "test": "pnpm contracts && pnpm -r test"
+    "test": "pnpm contracts && pnpm -r test",
+    "db:up": "docker compose up -d postgres redis",
+    "db:down": "docker compose down",
+    "db:generate": "pnpm --filter @aegis/api prisma:generate",
+    "db:migrate": "pnpm --filter @aegis/api prisma:migrate"
   },
   "engines": {
     "node": ">=20"
   },
-  "packageManager": "pnpm@10.33.0"
+  "packageManager": "pnpm@10.33.0",
+  "//overrides": "ONE ioredis in the tree. BullMQ bundles its own, and two copies means two connection pools and two incompatible sets of types — a client that typechecks against one and is handed to the other. Pinned to what BullMQ resolves, because BullMQ is the one with an opinion.",
+  "//onlyBuiltDependencies": "pnpm 10 blocks postinstall scripts by default. These are the ones we genuinely need: Prisma downloads its query engine, esbuild and sharp fetch native binaries. Everything else stays blocked.",
+  "pnpm": {
+    "overrides": {
+      "ioredis": "5.10.1"
+    },
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild",
+      "sharp",
+      "unrs-resolver",
+      "msgpackr-extract"
+    ]
+  }
 }

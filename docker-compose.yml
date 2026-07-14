@@ -1,0 +1,76 @@
+# Aegis Signal — local development stack.
+#
+# `docker compose up -d postgres redis` gives you the two dependencies the API
+# needs. The API itself usually runs on the host (`pnpm dev:api`) so it reloads.
+#
+# This is NOT the production topology — Coolify owns that, and it injects the
+# environment rather than reading a compose file.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aegis-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aegis
+      POSTGRES_PASSWORD: aegis
+      POSTGRES_DB: aegis
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # Wait for readiness, not just for the process to exist — the API's own
+      # health check round-trips a query and will fail against a booting DB.
+      test: ["CMD-SHELL", "pg_isready -U aegis -d aegis"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: aegis-redis
+    restart: unless-stopped
+    # appendonly: BullMQ's jobs live here. A queue that loses its jobs on restart
+    # is a queue that loses the risk check that should have blocked a trade.
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # The API, containerised. Optional locally; this is what Coolify builds.
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: aegis-api
+    restart: unless-stopped
+    profiles: ["full"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      APP_URL: http://localhost:4000
+      WEB_ORIGIN: http://localhost:3000
+      TZ: UTC
+      DATABASE_URL: postgresql://aegis:aegis@postgres:5432/aegis
+      REDIS_URL: redis://redis:6379
+      # Compose-only. Production secrets come from Coolify, never from a file.
+      JWT_SECRET: compose-only-not-a-production-secret-32-chars-min
+      LOG_LEVEL: info
+    ports:
+      - "4000:4000"
+
+volumes:
+  postgres-data:
+  redis-data:

@@ -90,7 +90,21 @@
       "Bash(mv \"app/\\(platform\\)/analytics/page.tsx\" \"app/\\(platform\\)/track-record/page.tsx\")",
       "Bash(rmdir \"app/\\(platform\\)/analytics\")",
       "Bash(sed -i 's|href: \"/analytics\"|href: \"/track-record\"|' config/navigation.ts)",
-      "Bash(awk '{print $2}')"
+      "Bash(awk '{print $2}')",
+      "Bash(pkill -f \"psql\")",
+      "Bash(grep -qE \"^\\\\.env$|^\\\\.env\\\\b\" .gitignore)",
+      "Bash(git check-ignore *)",
+      "PowerShell(pnpm --filter @aegis/api exec prisma generate 2>&1)",
+      "Bash(node -e \"console.log\\(require.resolve\\('ioredis/package.json',{paths:['apps/api']}\\)\\)\")",
+      "Bash(node -e \"console.log\\('version:', require\\(require.resolve\\('ioredis/package.json',{paths:['apps/api']}\\)\\).version\\)\")",
+      "Bash(npx vitest *)",
+      "Bash(rm -rf dist)",
+      "Bash(echo \"── build exit: $? ──\")",
+      "Bash(tail -25 /tmp/api.log 2>/dev/null || echo \"no log\")",
+      "Bash(curl -s http://127.0.0.1:4000/health/info)",
+      "Bash(curl -s http://127.0.0.1:4000/api/v1/nonexistent)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const e=JSON.parse\\(d\\).error;console.log\\('code:',e.code,'| requestId:',e.requestId.slice\\(0,8\\)+'…','| path:',e.path\\)}\\)\")",
+      "Bash(pnpm test *)"
     ]
   }
 }
