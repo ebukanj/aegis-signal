@@ -24,6 +24,7 @@ import {
   calibratedConfidenceSchema,
   confidenceContributorSchema,
 } from "./confidence";
+import { riskFactorSchema } from "./risk/risk";
 
 /**
  * The Signal — the single output of Aegis Signal (AGENTS.md §1).
@@ -52,14 +53,17 @@ export type ExecutionGuidance = z.infer<typeof executionGuidanceSchema>;
 
 /* ── Signal detail ─────────────────────────────────────────────────── */
 
-export const riskFactorSchema = z.object({
-  name: z.string(),
-  rating: riskLevelSchema,
-  note: z.string(),
-  /** False for factors the backend does not measure yet (funding, OI). */
-  available: z.boolean(),
-});
-export type RiskFactor = z.infer<typeof riskFactorSchema>;
+/**
+ * `RiskFactor` MOVED to `risk/risk.ts`.
+ *
+ * It was defined here AND there — two definitions of one truth, which is exactly
+ * the drift this package exists to prevent. The Risk Engine's version won,
+ * because it carries `measured`: a factor that says "liquidity: HIGH risk" is an
+ * assertion, while one that says "24h volume $12M — below the $50M floor" is
+ * evidence. The Risk Engine owns risk (AGENTS.md §2), so it owns the shape.
+ */
+export { riskFactorSchema } from "./risk/risk";
+export type { RiskFactor } from "./risk/risk";
 
 export const checklistItemSchema = z.object({
   label: z.string(),

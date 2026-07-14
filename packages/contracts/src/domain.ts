@@ -80,19 +80,21 @@ export type MarketType = z.infer<typeof marketTypeSchema>;
 
 /* ── Shared primitives ─────────────────────────────────────────────── */
 
-/** A confidence score. Calibrated against realized outcomes, never asserted. */
-export const confidenceSchema = z.number().min(0).max(100);
-
-/** ISO-8601 timestamp, e.g. "2026-07-12T09:30:00.000Z". */
-export const timestampSchema = z.iso.datetime();
-
-/** A strictly positive price. Rejects the 0 and NaN a broken feed would send. */
-export const priceSchema = z.number().positive().finite();
-
-/** One point on a time series (equity curve, price history). */
-export const timeSeriesPointSchema = z.object({
-  /** Unix seconds. */
-  time: z.number().int(),
-  value: z.number(),
-});
-export type TimeSeriesPoint = z.infer<typeof timeSeriesPointSchema>;
+/**
+ * These MOVED to `common/value-objects.ts` and are re-exported here only so the
+ * existing `import { priceSchema } from "@aegis/contracts"` keeps working.
+ *
+ * They are not redefined. Two definitions of one truth is precisely the drift
+ * this package exists to prevent — a `priceSchema` here saying `.positive()`
+ * while one there says `.nonnegative()` is a bug that compiles, and it would
+ * surface as a division by zero in the position calculator.
+ *
+ * Add new primitives to value-objects.ts. Never here.
+ */
+export {
+  confidenceSchema,
+  timestampSchema,
+  priceSchema,
+  timeSeriesPointSchema,
+} from "./common/value-objects";
+export type { TimeSeriesPoint } from "./common/value-objects";

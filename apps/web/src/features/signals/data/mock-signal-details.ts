@@ -161,37 +161,53 @@ function buildDetail(opp: Opportunity): SignalDetail {
     {
       name: "Liquidity",
       rating: nearRisk(),
-      note: "Depth within 0.5% of mid supports the expected position size.",
+      measured: `24h volume $${randInt(rand, 62, 480)}M (floor $50M)`,
+      note: "Deep enough to fill the position without moving the price.",
       available: true,
     },
     {
       name: "Volatility",
       rating: nearRisk(),
-      note: "Realized volatility is inside the strategy's accepted band.",
+      measured: `ATR ${(0.9 + rand() * 1.8).toFixed(1)}% of price`,
+      note: "Inside the band this strategy was built for.",
       available: true,
     },
     {
       name: "Spread",
       rating: riskIndex > 1 ? "MODERATE" : "LOW",
-      note: "Average spread is a small fraction of the stop distance.",
+      measured: `${(0.008 + rand() * 0.03).toFixed(3)}% (limit 0.05%)`,
+      note: "A small fraction of the stop distance — the edge survives the cost of entry.",
       available: true,
     },
     {
       name: "Correlation",
       rating: nearRisk(),
-      note: "Exposure overlap with other active signals stays under the portfolio limit.",
+      measured: `${randInt(rand, 0, 2)} of 3 correlated positions open`,
+      note: "Overlap with other live signals is under the portfolio cap.",
       available: true,
     },
     {
+      name: "Portfolio heat",
+      rating: nearRisk(),
+      measured: `${(0.8 + rand() * 2.4).toFixed(1)}% open risk (cap 4%)`,
+      note: "Total risk across every open position.",
+      available: true,
+    },
+    {
+      // `available: false` is not a formality. A factor the platform cannot see
+      // must read as MISSING, never as FINE — an unmeasured risk displayed as
+      // "moderate" is a reassurance we have not earned.
       name: "Funding",
       rating: "MODERATE",
-      note: "Funding-rate risk measurement arrives with live derivatives data.",
+      measured: "not measured — no derivatives feed",
+      note: "Arrives with the derivatives feed. Until then we cannot see it, and we say so.",
       available: false,
     },
     {
-      name: "Open Interest",
+      name: "Open interest",
       rating: "MODERATE",
-      note: "Open-interest risk measurement arrives with live derivatives data.",
+      measured: "not measured — no derivatives feed",
+      note: "Arrives with the derivatives feed.",
       available: false,
     },
   ];
