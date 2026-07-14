@@ -101,15 +101,16 @@ system. Keep it accurate; a stale reality section is a defect.
 | Area | Status |
 |---|---|
 | `apps/web` | **Built and polished.** Next.js 15. Renders **mock signals**, but the **live price is now real** (see below). Zero lint errors, strict TypeScript, build green. Seven workspaces: Signals · Scanner · Strategies · Insights · Track Record · Notifications · Settings (+ Admin). |
-| `packages/contracts` | **Built and tested.** 56 tests. The one definition of every DTO, domain enum, indicator, pattern and invariant. |
+| `packages/contracts` | **Built and tested.** 87 tests. **Owns the six strategy documents** — one copy, imported by both apps. The one definition of every DTO, domain enum, indicator, pattern and invariant. |
 | Strategies | **Six plain-English documents**, not code ([ADR-023](docs/adr/ADR-023-strategy-as-document.md)). Vocabulary covers 47 indicators, divergence, market structure and chart patterns ([ADR-024](docs/adr/ADR-024-earned-confidence-and-the-pattern-vocabulary.md)). **None is implemented or validated. All are UNPROVEN.** |
-| `apps/api` | **Built through Milestone 06.** 463 tests. NestJS, Prisma, Redis, BullMQ, Pino, Terminus. `/health` checks database, redis, queue **and exchange connectivity**. |
+| `apps/api` | **Built through Milestone 07.** 497 tests. NestJS, Prisma, Redis, BullMQ, Pino, Terminus. `/health` checks database, redis, queue **and exchange connectivity**. |
 | `packages/database` | **Built.** Prisma schema + local Postgres (`aegis_signal`). |
 | **Market Data & Exchange Layer** | **BUILT AND LIVE.** Real Binance + Bybit data. CCXT REST, native Binance WebSocket, symbol registry, circuit breaker, rate limiter, boundary normalizer, Redis cache, Socket.IO gateway. **Real candles and real prices flow end to end.** |
 | **Indicator Engine** | **BUILT.** All 47 contract indicators, cross-checked against an independent library and verified on live BTC candles. Registry, multi-timeframe resolver, Redis cache, validation gate, 16 operators, divergence engine, benchmark suite. See [docs/08-INDICATORS.md](docs/08-INDICATORS.md). |
 | **Pattern Engine** | **BUILT.** 24 detectors: swings, market structure (BOS/CHoCH), zones, liquidity sweeps, FVGs, order blocks, flags, wedges, triangles, channels, double/triple tops. Every detection carries evidence AND weaknesses. Guarded by a false-positive suite over random walks. **Head & shoulders, cup & handle and Elliott waves remain REFUSED** (ADR-024) — see [docs/09-PATTERNS.md](docs/09-PATTERNS.md). |
 | **Market Regime Engine** | **BUILT.** Two orthogonal axes (direction + volatility), a five-voter weighted vote with signed scores, hysteresis with a dwell, multi-timeframe alignment/conflict, and strategy compatibility **declared on the strategy document** (ADR-023). Replayed against real BTC history: 2021 bull, 2022 bear, mid-2020 chop, COVID crash. `agreement` is stamped **UNCALIBRATED** forever — there is no ground truth for a regime, so a regime "probability" is unfalsifiable by construction. See [docs/10-REGIME.md](docs/10-REGIME.md). |
-| Strategy · Risk · Signal · Confidence · Calibration engines | **Not built.** Indicators, patterns and regime now produce evidence, and nothing consumes it yet. |
+| **Strategy Evaluator** | **BUILT.** One generic document interpreter — **zero strategy-specific code, proven by a test that greps the module's own source**. Entry language: ALL-OF of [rule \| ANY-OF group], with NOT. Versioning: editing a rule bumps the version and **wipes the track record** (ADR-024). Produces CANDIDATES — no confidence, no approval, no risk validation. Verified on live BTC. See [docs/11-STRATEGY-EVALUATOR.md](docs/11-STRATEGY-EVALUATOR.md). |
+| Risk · Signal · Confidence · Calibration engines | **Not built.** Candidates are produced and **nothing consumes them yet.** |
 | Notifications · AI layer | **Not built.** |
 
 ### What the frontend still fakes, and must stop faking

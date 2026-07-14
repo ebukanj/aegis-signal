@@ -342,13 +342,15 @@ export const conditionSchema = z
   .superRefine((condition, ctx) => {
     if (condition.kind !== "comparison") return;
 
-    const wantsUpper = condition.op === "between";
+    const wantsUpper =
+      condition.op === "between" || condition.op === "outside_range";
     const hasUpper = condition.rightUpper !== undefined;
+
     if (wantsUpper !== hasUpper) {
       ctx.addIssue({
         code: "custom",
         message:
-          "`between` requires an upper bound; every other operator forbids one",
+          "`between` and `outside_range` require an upper bound; every other operator forbids one",
         path: ["rightUpper"],
       });
     }
@@ -356,6 +358,76 @@ export const conditionSchema = z
 export type Condition = z.infer<typeof conditionSchema>;
 export type ComparisonCondition = z.infer<typeof comparisonConditionSchema>;
 export type PatternCondition = z.infer<typeof patternConditionSchema>;
+
+/* ── The entry language ────────────────────────────────────────────── */
+
+/**
+ * ONE condition, optionally negated.
+ *
+ * `negate` rather than a `NOT` node in a tree. It says the same thing, it renders
+ * as a checkbox rather than a nested branch, and it cannot be nested wrongly.
+ */
+export const ruleSchema = z.object({
+  kind: z.literal("rule"),
+  condition: conditionSchema,
+  /** "…is NOT true". */
+  negate: z.boolean().default(false),
+});
+export type Rule = z.infer<typeof ruleSchema>;
+
+/**
+ * ANY of these. One level of OR, and one level only.
+ *
+ * This is what a strategy actually needs: *"a bull flag OR a falling wedge OR an
+ * ascending triangle"* is Pattern Break, and it is a single OR. Anything deeper is
+ * a thing traders describe by writing a second strategy.
+ */
+export const anyOfSchema = z.object({
+  kind: z.literal("any_of"),
+  /** Two or more. A one-item OR is a rule wearing a disguise. */
+  rules: z.array(ruleSchema).min(2),
+});
+export type AnyOf = z.infer<typeof anyOfSchema>;
+
+/**
+ * An entry rule: a single condition, or a group where any one will do.
+ *
+ * ── Why the nesting stops HERE ──
+ *
+ * Milestone 07's brief asked for unlimited depth: `A AND (B OR C) AND NOT D AND
+ * (E OR (F AND G))`. The evaluator could support that in an afternoon — a
+ * recursive tree is not hard.
+ *
+ * The reason it does not is [ADR-023](../../docs/adr/ADR-023-strategy-as-document.md),
+ * and it is the load-bearing rule of the entire platform: **a strategy is a
+ * document, and a user-created one takes the identical code path as a built-in.**
+ *
+ * If the evaluator understands logic the strategy EDITOR cannot render, then
+ * built-in strategies can use nesting and user strategies cannot. Worse — a user
+ * opening a nested built-in in a flat editor would have it **silently flattened**,
+ * and would then be trading rules nobody wrote. That is not hypothetical: this
+ * codebase already shipped an editor that rendered `0` where an indicator operand
+ * belonged, so touching a strategy would quietly turn *"price above the highest
+ * high"* into *"price above 0"*.
+ *
+ * **The document language is exactly what the editor can express.** Not a subset,
+ * not a superset. That constraint is a feature, and the day it stops being true,
+ * ADR-023 becomes a slogan.
+ *
+ * `entry` is the AND of these. Nesting depth: one.
+ */
+export const entryRuleSchema = z.discriminatedUnion("kind", [
+  ruleSchema,
+  anyOfSchema,
+]);
+export type EntryRule = z.infer<typeof entryRuleSchema>;
+
+/** Every condition an entry rule touches, flattened. Used by the resolver. */
+export function conditionsOf(rule: EntryRule): Condition[] {
+  return rule.kind === "rule"
+    ? [rule.condition]
+    : rule.rules.map((r) => r.condition);
+}
 
 /* ── Exit rules ────────────────────────────────────────────────────── */
 
@@ -419,6 +491,45 @@ export const strategyDefinitionSchema = z
     origin: strategyOriginSchema,
     enabled: z.boolean(),
 
+    /**
+     * THE VERSION. Bumped whenever the RULES change — never for a rename.
+     *
+     * ── Why a strategy that is edited loses its record ──
+     *
+     * Confidence must be EARNED (ADR-024). A strategy's track record is evidence
+     * about a specific set of rules, and the moment those rules change it is
+     * evidence about nothing: a 61% win rate produced by an RSI(14) threshold of 30
+     * says nothing whatsoever about the same strategy at 25.
+     *
+     * Carrying the record across an edit would let a trader tune a strategy until it
+     * looked good and inherit the confidence of the version that actually earned it.
+     * That is fabricated confidence with extra steps, and it is exactly what this
+     * platform killed once already.
+     *
+     * So editing the rules resets `record` to null and the strategy is UNPROVEN
+     * again. The codebase already said this out loud, about copies: *"A copy has
+     * earned nothing. It starts UNPROVEN."* An edit is a copy that overwrote its
+     * parent.
+     *
+     * Renaming it, or fixing a typo in the summary, changes nothing — those are not
+     * rules, and pretending they are would make the platform unusable.
+     */
+    version: z.number().int().positive().default(1),
+
+    /**
+     * A fingerprint of the EVALUABLE parts, and only those.
+     *
+     * `rulesHash(strategy)` computes it. Two strategies with the same hash will
+     * behave identically on the same candles, whatever they are called — which is
+     * what makes it safe to reset the record on a change and safe NOT to on a
+     * rename.
+     *
+     * Also the version-safety guarantee the brief asks for: a signal records the
+     * hash of the rules that produced it, so a settled trade can always be traced
+     * back to the exact document that fired it, even after the strategy has moved on.
+     */
+    rulesHash: z.string().optional(),
+
     direction: z.union([signalDirectionSchema, z.literal("BOTH")]),
     market: marketTypeSchema,
     timeframe: timeframeSchema,
@@ -457,10 +568,25 @@ export const strategyDefinitionSchema = z
      */
     avoidRegimes: z.array(marketRegimeSchema).default([]),
 
-    /** ALL of these must be true to enter. Never empty. */
-    entry: z.array(conditionSchema).min(1),
-    /** Additional gates (higher-timeframe trend, liquidity). May be empty. */
-    filters: z.array(conditionSchema),
+    /**
+     * ALL of these must be true to enter. Never empty.
+     *
+     * Each is a single rule, or an ANY-OF group. The AND is implicit — a strategy
+     * whose entry conditions were OR-ed together would fire on its weakest one, and
+     * a rule you would not take alone is not a rule you should take at all.
+     */
+    entry: z.array(entryRuleSchema).min(1),
+
+    /**
+     * Additional gates — higher-timeframe trend, liquidity. May be empty.
+     *
+     * Identical machinery to `entry`, and a deliberately different NAME. Both must
+     * pass, so the evaluator treats them the same; the split exists so a trader can
+     * see at a glance which rules are the SETUP and which are the permission to take
+     * it. "RSI below 30" is why you are here. "The 4h trend is up" is whether you are
+     * allowed to be.
+     */
+    filters: z.array(entryRuleSchema),
 
     stop: stopRuleSchema,
     /** Ordered, nearest first. Must total ≤ 100% of the position. */
@@ -498,18 +624,135 @@ export function isProven(strategy: StrategyDefinition): boolean {
   return strategy.record !== null && strategy.record.signals > 0;
 }
 
+/* ── Versioning ────────────────────────────────────────────────────── */
+
+/**
+ * The parts of a strategy that change what it DOES.
+ *
+ * Everything a trader can change without changing a single trade the strategy would
+ * have taken is deliberately absent: `name`, `summary`, `enabled`, `origin`,
+ * `record`, `version`, `riskLevel`.
+ *
+ * `riskPercent` and `maxLeverage` ARE here, and that is worth a sentence. They do
+ * not change *whether* the strategy fires — but they change the size of every
+ * position it takes, so a win rate earned at 1% risk is not evidence about the same
+ * rules at 4%. The record has to reset.
+ */
+function evaluableParts(
+  strategy: Omit<StrategyDefinition, "version" | "rulesHash">,
+) {
+  return {
+    direction: strategy.direction,
+    market: strategy.market,
+    timeframe: strategy.timeframe,
+    regimes: [...strategy.regimes].sort(),
+    avoidRegimes: [...strategy.avoidRegimes].sort(),
+    entry: strategy.entry,
+    filters: strategy.filters,
+    stop: strategy.stop,
+    targets: strategy.targets,
+    riskPercent: strategy.riskPercent,
+    maxLeverage: strategy.maxLeverage,
+  };
+}
+
+/**
+ * A stable fingerprint of what the strategy will actually DO.
+ *
+ * Deterministic across processes and machines: keys are sorted at every level, so
+ * two documents that differ only in the order their JSON happened to be written
+ * hash identically. Without that, a round-trip through a database or a form would
+ * "change" the rules and silently wipe a strategy's record.
+ *
+ * FNV-1a rather than a crypto hash: this is a change-detector, not a security
+ * boundary, and it must run in the browser as cheaply as on the server. Nobody is
+ * attacking it — the failure mode we care about is a collision by accident, and
+ * 32 bits is ample for the number of strategies a human will ever write.
+ */
+export function rulesHash(
+  strategy: Omit<StrategyDefinition, "version" | "rulesHash">,
+): string {
+  const canonical = stableStringify(evaluableParts(strategy));
+
+  let hash = 0x811c9dc5;
+
+  for (let i = 0; i < canonical.length; i++) {
+    hash ^= canonical.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+
+  return hash.toString(16).padStart(8, "0");
+}
+
+/** JSON with every object's keys sorted, at every depth. */
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(",")}]`;
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter(([, v]) => v !== undefined)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${JSON.stringify(k)}:${stableStringify(v)}`);
+
+  return `{${entries.join(",")}}`;
+}
+
+/**
+ * Has this strategy's behaviour changed?
+ *
+ * The one question that decides whether a record survives an edit.
+ */
+export function rulesChanged(
+  before: StrategyDefinition,
+  after: StrategyDefinition,
+): boolean {
+  return rulesHash(before) !== rulesHash(after);
+}
+
+/**
+ * Apply an edit honestly.
+ *
+ * If the rules changed: bump the version, stamp the new hash, and **wipe the
+ * record**. The strategy is UNPROVEN again, because its past results were produced
+ * by rules that no longer exist.
+ *
+ * If they did not: nothing happens beyond the rename. A trader must be able to fix
+ * a typo without being punished for it.
+ */
+export function applyEdit(
+  before: StrategyDefinition,
+  after: StrategyDefinition,
+): StrategyDefinition {
+  if (!rulesChanged(before, after)) {
+    return { ...after, version: before.version, rulesHash: rulesHash(before), record: before.record };
+  }
+
+  return {
+    ...after,
+    version: before.version + 1,
+    rulesHash: rulesHash(after),
+    // It has earned nothing. Whatever it earned belonged to a different strategy.
+    record: null,
+  };
+}
+
+/** Every condition a strategy touches, across entry and filters, flattened. */
+export function allConditions(strategy: StrategyDefinition): Condition[] {
+  return [...strategy.entry, ...strategy.filters].flatMap(conditionsOf);
+}
+
 /** True when a strategy needs the derivatives feed we do not have yet. */
 export function needsDerivativesFeed(strategy: StrategyDefinition): boolean {
-  const usesDerivatives = (conditions: Condition[]) =>
-    conditions.some(
-      (c) =>
-        c.kind === "comparison" &&
-        [c.left, c.right, c.rightUpper].some(
-          (operand) =>
-            operand?.kind === "indicator" &&
-            (DERIVATIVES_INDICATORS as string[]).includes(operand.indicator),
-        ),
-    );
-
-  return usesDerivatives(strategy.entry) || usesDerivatives(strategy.filters);
+  return allConditions(strategy).some(
+    (c) =>
+      c.kind === "comparison" &&
+      [c.left, c.right, c.rightUpper].some(
+        (operand) =>
+          operand?.kind === "indicator" &&
+          (DERIVATIVES_INDICATORS as string[]).includes(operand.indicator),
+      ),
+  );
 }

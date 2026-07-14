@@ -1,10 +1,12 @@
 import { BAR_COUNT_OPERATORS, RANGE_OPERATORS } from "./strategy";
 import type {
   Condition,
+  EntryRule,
   Indicator,
   Operand,
   Operator,
   Pattern,
+  Rule,
   StopRule,
   StrategyDefinition,
   TargetRule,
@@ -293,6 +295,32 @@ export function describeTarget(target: TargetRule): string {
   return `+${target.rMultiple}R — close ${target.closePercent}%`;
 }
 
+/**
+ * One entry rule, in a trader's words.
+ *
+ * A single rule reads as itself. An ANY-OF group reads as a sentence with "or" in
+ * it, which is exactly how a trader would say it out loud: *"a bull flag, a falling
+ * wedge, or an ascending triangle."*
+ *
+ * This function is the reason the document language stops at one level of nesting.
+ * `A AND (B OR (C AND NOT D))` cannot be rendered as a sentence anybody would read,
+ * and a strategy a trader cannot READ is a strategy they cannot audit — which is the
+ * whole of ADR-023.
+ */
+export function describeEntryRule(rule: EntryRule): string {
+  if (rule.kind === "rule") {
+    const text = describeCondition(rule.condition);
+    return rule.negate ? `NOT: ${text}` : text;
+  }
+
+  const parts = rule.rules.map((r: Rule) =>
+    r.negate ? `NOT ${describeCondition(r.condition)}` : describeCondition(r.condition),
+  );
+
+  const last = parts.pop();
+  return `${parts.join(", ")}, or ${last}`;
+}
+
 /** The whole strategy, as prose. Used verbatim on the Strategies page. */
 export function describeStrategy(strategy: StrategyDefinition): {
   headline: string;
@@ -307,8 +335,8 @@ export function describeStrategy(strategy: StrategyDefinition): {
 
   return {
     headline: `Enter ${side} on the ${strategy.timeframe} when ALL of the following are true:`,
-    entry: strategy.entry.map(describeCondition),
-    filters: strategy.filters.map(describeCondition),
+    entry: strategy.entry.map(describeEntryRule),
+    filters: strategy.filters.map(describeEntryRule),
     stop: describeStop(strategy.stop),
     targets: strategy.targets.map(describeTarget),
     risk:

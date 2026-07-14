@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { StrategyDefinition } from "@aegis/contracts";
 import { BUILT_IN_STRATEGIES } from "@/constants/strategies";
+import { applyEdit, rulesHash } from "@aegis/contracts";
 
 /**
  * Your strategies — built-in and your own, in one list.
@@ -45,13 +46,38 @@ export const useStrategyStore = create<StrategyState>()(
 
       upsert: (strategy) =>
         set((state) => {
-          const exists = state.strategies.some((s) => s.id === strategy.id);
+          const existing = state.strategies.find((s) => s.id === strategy.id);
+
+          /*
+           * A brand-new strategy. It has earned nothing, and `applyEdit` has nothing
+           * to compare against.
+           */
+          if (!existing) {
+            return {
+              strategies: [
+                ...state.strategies,
+                { ...strategy, version: 1, rulesHash: rulesHash(strategy), record: null },
+              ],
+            };
+          }
+
+          /*
+           * AN EDIT. `applyEdit` decides honestly what survives it.
+           *
+           * If the RULES changed, the version bumps and the track record is WIPED — a
+           * 60% win rate produced by an RSI threshold of 30 says nothing whatsoever
+           * about the same strategy at 25, and carrying it across would let a trader
+           * tune a strategy until it looked good and inherit confidence the previous
+           * version earned. That is fabricated confidence with extra steps.
+           *
+           * If they only renamed it, nothing is lost. A typo is not a new strategy.
+           */
+          const saved = applyEdit(existing, strategy);
+
           return {
-            strategies: exists
-              ? state.strategies.map((s) =>
-                  s.id === strategy.id ? strategy : s,
-                )
-              : [...state.strategies, strategy],
+            strategies: state.strategies.map((s) =>
+              s.id === saved.id ? saved : s,
+            ),
           };
         }),
 
@@ -94,7 +120,15 @@ export const useStrategyStore = create<StrategyState>()(
        * mean something different from what its author intended. Better to reseed
        * honestly than to silently mutate somebody's strategy.
        */
-      version: 2,
+      /*
+       * Bumped to 3 for M07. The ENTRY LANGUAGE changed shape: an entry item is no
+       * longer a bare condition but a rule (which can be negated) or an ANY-OF group.
+       * A strategy persisted under the old shape would fail schema validation on the
+       * first evaluation.
+       *
+       * Discarded rather than translated, for exactly the reason already given below.
+       */
+      version: 3,
       migrate: () => ({ strategies: BUILT_IN_STRATEGIES }),
     },
   ),

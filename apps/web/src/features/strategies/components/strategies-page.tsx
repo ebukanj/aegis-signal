@@ -33,6 +33,9 @@ export function StrategiesPage() {
       summary: "",
       origin: "CUSTOM",
       enabled: false,
+
+      /** A brand-new strategy has earned nothing, and version 1 is the honest start. */
+      version: 1,
       direction: "LONG",
       market: "PERPETUAL",
       timeframe: "1h",
@@ -49,10 +52,14 @@ export function StrategiesPage() {
 
       entry: [
         {
-          kind: "comparison",
-          left: { kind: "indicator", indicator: "rsi", period: 14 },
-          op: "lt",
-          right: { kind: "number", value: 30 },
+          kind: "rule",
+          negate: false,
+          condition: {
+            kind: "comparison",
+            left: { kind: "indicator", indicator: "rsi", period: 14 },
+            op: "lt",
+            right: { kind: "number", value: 30 },
+          },
         },
       ],
       filters: [],

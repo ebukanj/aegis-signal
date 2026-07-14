@@ -23,10 +23,14 @@ const breakout = {
   timeframe: "1h",
   entry: [
     {
-      kind: "comparison",
-      left: { kind: "indicator", indicator: "close" },
-      op: "gt",
-      right: { kind: "indicator", indicator: "highest_high", period: 20 },
+      kind: "rule",
+      negate: false,
+      condition: {
+        kind: "comparison",
+        left: { kind: "indicator", indicator: "close" },
+        op: "gt",
+        right: { kind: "indicator", indicator: "highest_high", period: 20 },
+      },
     },
   ],
   filters: [],
@@ -105,7 +109,13 @@ describe("the new vocabulary (ADR-024)", () => {
   it("accepts a pattern condition", () => {
     const result = strategyDefinitionSchema.safeParse({
       ...breakout,
-      entry: [{ kind: "pattern", pattern: "BULL_FLAG", minQuality: 0.75 }],
+      entry: [
+        {
+          kind: "rule",
+          negate: false,
+          condition: { kind: "pattern", pattern: "BULL_FLAG", minQuality: 0.75 },
+        },
+      ],
     });
     expect(result.success).toBe(true);
   });
@@ -113,7 +123,13 @@ describe("the new vocabulary (ADR-024)", () => {
   it("rejects a pattern quality outside 0–1", () => {
     const result = strategyDefinitionSchema.safeParse({
       ...breakout,
-      entry: [{ kind: "pattern", pattern: "BULL_FLAG", minQuality: 75 }],
+      entry: [
+        {
+          kind: "rule",
+          negate: false,
+          condition: { kind: "pattern", pattern: "BULL_FLAG", minQuality: 75 },
+        },
+      ],
     });
     expect(result.success).toBe(false);
   });
@@ -136,7 +152,10 @@ describe("the new vocabulary (ADR-024)", () => {
       right: { kind: "number" as const, value: 20 },
     };
     expect(
-      strategyDefinitionSchema.safeParse({ ...breakout, entry: [divergence] })
+      strategyDefinitionSchema.safeParse({
+        ...breakout,
+        entry: [{ kind: "rule", negate: false, condition: divergence }],
+      })
         .success,
     ).toBe(true);
     expect(describeCondition(divergence)).toBe(
@@ -149,10 +168,14 @@ describe("the new vocabulary (ADR-024)", () => {
       ...breakout,
       entry: [
         {
-          kind: "comparison",
-          left: { kind: "indicator", indicator: "funding_rate" },
-          op: "gte",
-          right: { kind: "number", value: 0.08 },
+          kind: "rule",
+          negate: false,
+          condition: {
+            kind: "comparison",
+            left: { kind: "indicator", indicator: "funding_rate" },
+            op: "gte",
+            right: { kind: "number", value: 0.08 },
+          },
         },
       ],
     });

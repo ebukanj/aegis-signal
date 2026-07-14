@@ -14,6 +14,7 @@ import { MarketModule } from "./modules/market/market.module";
 import { IndicatorModule } from "./modules/indicators/indicator.module";
 import { PatternModule } from "./modules/patterns/pattern.module";
 import { RegimeModule } from "./modules/regime/regime.module";
+import { StrategyModule } from "./modules/strategy/strategy.module";
 
 /**
  * The application.
@@ -89,6 +90,15 @@ import { RegimeModule } from "./modules/regime/regime.module";
      * rule that prints money in a trend gets shredded in a range.
      */
     RegimeModule,
+
+    /*
+     * The document interpreter. Every strategy — built-in or user-invented — is a
+     * document, and this is the ONE thing that reads it (ADR-023). It produces
+     * candidates: trading intent, and the weakest opinion the platform holds.
+     *
+     * NOTHING MAY SKIP THE RISK ENGINE. A candidate is not a signal.
+     */
+    StrategyModule,
 
     /*
      * Still to come, in pipeline order:

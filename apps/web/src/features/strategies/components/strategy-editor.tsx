@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, TriangleAlert } from "lucide-react";
 import { strategyDefinitionSchema } from "@aegis/contracts";
-import type { Condition, StrategyDefinition } from "@aegis/contracts";
+import type { EntryRule, StrategyDefinition } from "@aegis/contracts";
 import {
   Sheet,
   SheetContent,
@@ -22,7 +22,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ConditionRow } from "@/features/strategies/components/condition-row";
+import {
+  EntryRuleRow,
+  blankGroup,
+  blankRule,
+} from "@/features/strategies/components/entry-rule-row";
 
 /**
  * The strategy builder.
@@ -38,14 +42,6 @@ import { ConditionRow } from "@/features/strategies/components/condition-row";
  * position, leverage on a spot rule) cannot be created at all.
  */
 
-function blankCondition(): Condition {
-  return {
-    kind: "comparison",
-    left: { kind: "indicator", indicator: "rsi", period: 14 },
-    op: "lt",
-    right: { kind: "number", value: 30 },
-  };
-}
 
 export function StrategyEditor({
   strategy,
@@ -83,16 +79,16 @@ function EditorBody({
   const patch = (changes: Partial<StrategyDefinition>) =>
     setDraft((d) => ({ ...d, ...changes }) as StrategyDefinition);
 
-  const setEntry = (index: number, condition: Condition) =>
+  const setEntry = (index: number, rule: EntryRule) =>
     setDraft((d) => ({
       ...d,
-      entry: d.entry.map((c, i) => (i === index ? condition : c)),
+      entry: d.entry.map((r, i) => (i === index ? rule : r)),
     }));
 
-  const setFilter = (index: number, condition: Condition) =>
+  const setFilter = (index: number, rule: EntryRule) =>
     setDraft((d) => ({
       ...d,
-      filters: d.filters.map((c, i) => (i === index ? condition : c)),
+      filters: d.filters.map((r, i) => (i === index ? rule : r)),
     }));
 
   const isNew = strategy.name === "";
@@ -215,22 +211,35 @@ function EditorBody({
                 up?&rdquo;
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => patch({ entry: [...draft.entry, blankCondition()] })}
-            >
-              <Plus /> Add
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => patch({ entry: [...draft.entry, blankRule()] })}
+              >
+                <Plus /> Condition
+              </Button>
+              {/*
+                One level of OR. "A bull flag OR a falling wedge OR an ascending
+                triangle" is how a trader actually describes Pattern Break.
+              */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => patch({ entry: [...draft.entry, blankGroup()] })}
+              >
+                <Plus /> Any-of group
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">
-            {draft.entry.map((condition, index) => (
-              <ConditionRow
+            {draft.entry.map((rule, index) => (
+              <EntryRuleRow
                 key={index}
-                condition={condition}
+                rule={rule}
                 strategyTimeframe={draft.timeframe}
-                onChange={(c) => setEntry(index, c)}
+                onChange={(r) => setEntry(index, r)}
                 onRemove={
                   draft.entry.length > 1
                     ? () =>
@@ -257,7 +266,7 @@ function EditorBody({
               variant="outline"
               size="sm"
               onClick={() =>
-                patch({ filters: [...draft.filters, blankCondition()] })
+                patch({ filters: [...draft.filters, blankRule()] })
               }
             >
               <Plus /> Add
@@ -266,12 +275,12 @@ function EditorBody({
 
           {draft.filters.length > 0 && (
             <div className="space-y-2">
-              {draft.filters.map((condition, index) => (
-                <ConditionRow
+              {draft.filters.map((rule, index) => (
+                <EntryRuleRow
                   key={index}
-                  condition={condition}
+                  rule={rule}
                   strategyTimeframe={draft.timeframe}
-                  onChange={(c) => setFilter(index, c)}
+                  onChange={(r) => setFilter(index, r)}
                   onRemove={() =>
                     patch({
                       filters: draft.filters.filter((_, i) => i !== index),

@@ -43,6 +43,8 @@ export * from "./market/regime";
 /* ── Strategy — a strategy is a document, not code (ADR-023) ───────── */
 export * from "./strategy";
 export * from "./strategy-language";
+export * from "./candidate";
+export * from "./strategies";
 
 /* ── Risk — the veto ───────────────────────────────────────────────── */
 export * from "./risk/risk";
