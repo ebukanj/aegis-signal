@@ -75,12 +75,20 @@ export class AppConfigService {
     return { level: this.get("LOG_LEVEL") };
   }
 
-  /* ── Exchange (configured now; integrated in a later milestone) ──── */
+  /* ── Exchange ────────────────────────────────────────────────────── */
 
   get exchange() {
     return {
       timeoutMs: this.get("CCXT_TIMEOUT"),
       websocketHeartbeatMs: this.get("WS_HEARTBEAT"),
+      /**
+       * Empty means "use the operating system's resolver" — the production path.
+       * Populated only where the local network filters exchanges at the DNS layer.
+       */
+      dnsServers: (this.get("EXCHANGE_DNS_SERVERS") ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
     };
   }
 

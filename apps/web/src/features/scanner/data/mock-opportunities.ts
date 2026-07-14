@@ -30,26 +30,45 @@ import type { Opportunity } from "@/features/scanner/types";
  * *reality* — a coin that does not exist is not a placeholder, it is a bug
  * waiting to reach a trader.
  */
+/*
+ * THE PRICE IS NOW REAL, AND THESE ENTRIES MUST LIVE NEAR IT.
+ *
+ * `useLivePrice` no longer invents a number — it streams the actual Binance
+ * perpetual price. So a mock entry of $97,800 against a real BTC at $62,700
+ * renders every signal as "Invalidated: price already reached the stop". The
+ * signals would be fabricated AND look broken.
+ *
+ * These are anchored to the real perpetual prices as of 2026-07-14. They will
+ * drift, and that is tolerable: the entry only has to be in the right
+ * neighbourhood for the "at entry / chasing / missed" verdict to mean anything.
+ *
+ * The whole table dies with the Signal module, when signals come from the Risk
+ * Engine and carry entries the platform actually chose.
+ *
+ * TON was removed: Binance lists no TON perpetual, and the Symbol Registry
+ * refused to invent one. Mock data may lie about *values*; it must never lie
+ * about *reality* — a market that does not exist is not a placeholder, it is a
+ * bug waiting to reach a trader.
+ */
 const COINS: { coin: string; basePrice: number }[] = [
-  { coin: "BTC", basePrice: 97800 },
-  { coin: "ETH", basePrice: 3410 },
-  { coin: "SOL", basePrice: 168 },
-  { coin: "BNB", basePrice: 615 },
-  { coin: "XRP", basePrice: 2.32 },
-  { coin: "ADA", basePrice: 0.92 },
-  { coin: "AVAX", basePrice: 41.8 },
-  { coin: "DOGE", basePrice: 0.31 },
-  { coin: "LINK", basePrice: 21.4 },
-  { coin: "ARB", basePrice: 0.91 },
-  { coin: "OP", basePrice: 1.84 },
-  { coin: "DOT", basePrice: 6.85 },
-  { coin: "ATOM", basePrice: 6.12 },
-  { coin: "NEAR", basePrice: 4.95 },
-  { coin: "APT", basePrice: 8.6 },
-  { coin: "SUI", basePrice: 3.42 },
-  { coin: "TON", basePrice: 5.15 },
-  { coin: "LTC", basePrice: 104 },
-  { coin: "INJ", basePrice: 22.3 },
+  { coin: "BTC", basePrice: 62728 },
+  { coin: "ETH", basePrice: 1793 },
+  { coin: "SOL", basePrice: 75.2 },
+  { coin: "BNB", basePrice: 570 },
+  { coin: "XRP", basePrice: 1.069 },
+  { coin: "ADA", basePrice: 0.1586 },
+  { coin: "AVAX", basePrice: 6.48 },
+  { coin: "DOGE", basePrice: 0.0722 },
+  { coin: "LINK", basePrice: 7.94 },
+  { coin: "ARB", basePrice: 0.089 },
+  { coin: "OP", basePrice: 0.0997 },
+  { coin: "DOT", basePrice: 0.841 },
+  { coin: "ATOM", basePrice: 1.522 },
+  { coin: "NEAR", basePrice: 1.985 },
+  { coin: "APT", basePrice: 0.6015 },
+  { coin: "SUI", basePrice: 0.7303 },
+  { coin: "LTC", basePrice: 43.67 },
+  { coin: "INJ", basePrice: 5.026 },
 ];
 
 /**

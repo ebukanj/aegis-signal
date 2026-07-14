@@ -30,8 +30,13 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — secrets never, the template always.
+#
+# `.env*` on its own also swallows `.env.example`, which is the one file here that
+# MUST be committed: it is how a new machine learns NEXT_PUBLIC_API_URL exists.
+# Without it the app builds fine and silently never connects to the market feed.
 .env*
+!.env.example
 
 # vercel
 .vercel

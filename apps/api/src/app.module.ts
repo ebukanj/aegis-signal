@@ -10,6 +10,7 @@ import { RedisModule } from "./core/cache/redis.module";
 import { QueueModule } from "./core/queue/queue.module";
 import { EventsModule } from "./core/events/events.module";
 import { HealthModule } from "./health/health.module";
+import { MarketModule } from "./modules/market/market.module";
 
 /**
  * The application.
@@ -57,15 +58,23 @@ import { HealthModule } from "./health/health.module";
       ],
     }),
 
-    /* The only endpoints this milestone ships. */
     HealthModule,
 
     /*
-     * Intelligence modules land here, in pipeline order:
-     *   MarketModule, IndicatorModule, PatternModule, ConditionModule,
-     *   StrategyModule, RiskModule, ConfidenceModule, SignalModule,
-     *   CalibrationModule, LedgerModule, InsightModule, NotificationModule
-     * See docs/07-BACKEND_REQUIREMENTS.md. None of them exist yet, deliberately.
+     * The pipeline, in order. Market is the heartbeat — everything downstream
+     * assumes its data is accurate, timely and normalized.
+     */
+    MarketModule,
+
+    /*
+     * Still to come, in pipeline order:
+     *   IndicatorModule, PatternModule, ConditionModule, StrategyModule,
+     *   RiskModule, ConfidenceModule, SignalModule, CalibrationModule,
+     *   LedgerModule, InsightModule, NotificationModule
+     * See docs/07-BACKEND_REQUIREMENTS.md.
+     *
+     * NOTHING MAY SKIP THE RISK ENGINE. When a module is added here, that is
+     * the sentence to re-read.
      */
   ],
   providers: [

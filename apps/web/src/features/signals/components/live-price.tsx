@@ -52,8 +52,27 @@ export function LivePrice({
   showHint?: boolean;
 }) {
   const { price, moveFromEntryPercent, status } = useLivePrice(signal);
-  const meta = STATUS_META[status];
 
+  /*
+   * No price yet — and we say so.
+   *
+   * The obvious alternative is to show the entry price until a real one arrives.
+   * That is a lie with a straight face: it renders as "at entry, still
+   * actionable" on a trade that may have hit its stop ten minutes ago, and the
+   * trader has no way to tell. A dash is worth more than a plausible number.
+   */
+  if (price === null || status === null || moveFromEntryPercent === null) {
+    return (
+      <div className="flex items-baseline gap-2">
+        <span className="size-1.5 rounded-full bg-muted-foreground/40" />
+        <span className="font-numeric text-sm text-muted-foreground">
+          Waiting for price…
+        </span>
+      </div>
+    );
+  }
+
+  const meta = STATUS_META[status];
   const moved = moveFromEntryPercent;
   const sign = moved >= 0 ? "+" : "";
 

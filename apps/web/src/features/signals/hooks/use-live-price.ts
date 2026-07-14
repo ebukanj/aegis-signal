@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { EntryStatus } from "@aegis/contracts";
-import { createSeededRandom } from "@/lib/seeded-random";
+import { watchSymbol, type PriceTick } from "@/lib/market-socket";
 import type { Opportunity } from "@/features/scanner/types";
 
 /**
@@ -14,17 +14,25 @@ import type { Opportunity } from "@/features/scanner/types";
  * Without this, a trader cannot tell an actionable signal from a departed one,
  * and "here is a trade worth taking RIGHT NOW" is the entire product.
  *
- * MOCK ONLY. This ticks a seeded random walk so the UI can be built. When the
- * backend ships, price arrives over the market WebSocket and `entryStatus` is
- * decided by the RISK ENGINE — not here. The frontend renders the verdict; it
- * does not reach it (AGENTS.md §6).
+ * **The price is real.** It arrives over the market WebSocket from Binance, via
+ * the backend, validated at the boundary. This hook used to tick a seeded random
+ * walk so the UI could be built; that mock is gone (docs/MOCK_RETIREMENT.md).
+ *
+ * When no price has arrived yet, `price` is `null` and the component says so.
+ * That is the whole point of the change: a plausible invented number is worse
+ * than an honest blank, because a trader cannot tell the two apart.
+ *
+ * The `status` verdict still lives here, and it should not. It belongs to the
+ * RISK ENGINE (AGENTS.md §6) and moves there when the Signal module ships — at
+ * which point the backend sends the verdict and this hook only renders it.
  */
 
 export interface LivePriceState {
-  price: number;
+  /** Null until the first real tick. Never a placeholder. */
+  price: number | null;
   /** Signed % move from the signal's entry, in the trade's favour when positive. */
-  moveFromEntryPercent: number;
-  status: EntryStatus;
+  moveFromEntryPercent: number | null;
+  status: EntryStatus | null;
 }
 
 /**
@@ -44,10 +52,7 @@ function statusFor(
   const isLong = signal.direction === "LONG";
   const risk = Math.abs(signal.entryPrice - signal.stopLoss);
 
-  const move = isLong
-    ? price - signal.entryPrice
-    : signal.entryPrice - price;
-
+  const move = isLong ? price - signal.entryPrice : signal.entryPrice - price;
   const moveFromEntryPercent = (move / signal.entryPrice) * 100;
 
   // Already at the stop — the trade is dead, whatever the entry says.
@@ -56,37 +61,23 @@ function statusFor(
 
   const rMoved = risk > 0 ? move / risk : 0;
 
-  if (rMoved >= MISSED_AT_R)
-    return { status: "MISSED", moveFromEntryPercent };
-  if (rMoved >= CHASING_AT_R)
-    return { status: "CHASING", moveFromEntryPercent };
+  if (rMoved >= MISSED_AT_R) return { status: "MISSED", moveFromEntryPercent };
+  if (rMoved >= CHASING_AT_R) return { status: "CHASING", moveFromEntryPercent };
 
   return { status: "AT_ENTRY", moveFromEntryPercent };
 }
 
 export function useLivePrice(signal: Opportunity): LivePriceState {
-  const [price, setPrice] = useState(() => {
-    // Start close to entry but not exactly on it — a real feed never is.
-    const rand = createSeededRandom(
-      signal.id.split("").reduce((a, c) => a + c.charCodeAt(0), 3),
-    );
-    const risk = Math.abs(signal.entryPrice - signal.stopLoss);
-    const drift = (rand() - 0.35) * risk * 0.9;
-    return signal.entryPrice + (signal.direction === "LONG" ? drift : -drift);
-  });
+  const [price, setPrice] = useState<number | null>(null);
 
   useEffect(() => {
-    const risk = Math.abs(signal.entryPrice - signal.stopLoss);
-    const interval = setInterval(() => {
-      setPrice((current) => {
-        // Small random walk, scaled to the trade's own risk unit.
-        const step = (Math.random() - 0.5) * risk * 0.06;
-        return Math.max(0.00000001, current + step);
-      });
-    }, 1500);
+    setPrice(null);
+    return watchSymbol(signal.coin, (tick: PriceTick) => setPrice(tick.price));
+  }, [signal.coin]);
 
-    return () => clearInterval(interval);
-  }, [signal.entryPrice, signal.stopLoss]);
+  if (price === null) {
+    return { price: null, moveFromEntryPercent: null, status: null };
+  }
 
   return { price, ...statusFor(signal, price) };
 }

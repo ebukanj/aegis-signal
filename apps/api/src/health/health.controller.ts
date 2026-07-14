@@ -5,6 +5,7 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { PrismaHealthIndicator } from "../core/database/prisma.health";
 import { RedisHealthIndicator } from "../core/cache/redis.health";
 import { QueueHealthIndicator } from "../core/queue/queue.health";
+import { ExchangeHealthIndicator } from "../modules/market/exchange.health";
 import { AppConfigService } from "../config/app-config.service";
 
 /**
@@ -40,6 +41,7 @@ export class HealthController {
     private readonly prisma: PrismaHealthIndicator,
     private readonly redis: RedisHealthIndicator,
     private readonly queue: QueueHealthIndicator,
+    private readonly exchanges: ExchangeHealthIndicator,
     private readonly config: AppConfigService,
   ) {}
 
@@ -51,6 +53,13 @@ export class HealthController {
       () => this.prisma.isHealthy(),
       () => this.redis.isHealthy(),
       () => this.queue.isHealthy(),
+      /*
+       * Reports down only when EVERY exchange is unreachable. One exchange having
+       * a bad afternoon must not take the container out of rotation — but a
+       * platform that cannot see any market at all has nothing to offer, and must
+       * not claim otherwise.
+       */
+      () => this.exchanges.check(),
     ]);
   }
 

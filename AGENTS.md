@@ -100,24 +100,35 @@ system. Keep it accurate; a stale reality section is a defect.
 
 | Area | Status |
 |---|---|
-| `apps/web` | **Built and polished.** Next.js 15, rendering **mock data**. Zero lint errors, zero warnings, strict TypeScript, build green. Seven workspaces: Signals · Scanner · Strategies · Insights · Track Record · Notifications · Settings (+ Admin). |
-| `packages/contracts` | **Built and tested.** 34 tests. The one definition of every DTO, domain enum, indicator, pattern and invariant. |
+| `apps/web` | **Built and polished.** Next.js 15. Renders **mock signals**, but the **live price is now real** (see below). Zero lint errors, strict TypeScript, build green. Seven workspaces: Signals · Scanner · Strategies · Insights · Track Record · Notifications · Settings (+ Admin). |
+| `packages/contracts` | **Built and tested.** 56 tests. The one definition of every DTO, domain enum, indicator, pattern and invariant. |
 | Strategies | **Six plain-English documents**, not code ([ADR-023](docs/adr/ADR-023-strategy-as-document.md)). Vocabulary covers 47 indicators, divergence, market structure and chart patterns ([ADR-024](docs/adr/ADR-024-earned-confidence-and-the-pattern-vocabulary.md)). **None is implemented or validated. All are UNPROVEN.** |
-| `apps/api` | **Does not exist.** Deliberate — see [ADR-022](docs/adr/ADR-022-contract-first-backend.md). Everything it must do is specified in [docs/07-BACKEND_REQUIREMENTS.md](docs/07-BACKEND_REQUIREMENTS.md). |
-| `packages/database` | **Not built.** No Prisma schema yet. |
-| Market data · Indicator · Pattern · Strategy · Risk · Signal · Confidence · Calibration engines | **Not built.** No market data flows anywhere. |
+| `apps/api` | **Built through Milestone 03.** 55 tests. NestJS, Prisma, Redis, BullMQ, Pino, Terminus. `/health` checks database, redis, queue **and exchange connectivity**. |
+| `packages/database` | **Built.** Prisma schema + local Postgres (`aegis_signal`). |
+| **Market Data & Exchange Layer** | **BUILT AND LIVE.** Real Binance + Bybit data. CCXT REST, native Binance WebSocket, symbol registry, circuit breaker, rate limiter, boundary normalizer, Redis cache, Socket.IO gateway. **Real candles and real prices flow end to end.** |
+| Indicator · Pattern · Strategy · Risk · Signal · Confidence · Calibration engines | **Not built.** Market data now arrives, and nothing consumes it yet. |
 | Notifications · AI layer | **Not built.** |
 
-### The two things the frontend fakes, and must stop faking
+### What the frontend still fakes, and must stop faking
 
 1. **Confidence.** Mock scores are assembled in the honest *shape*
    (`CalibratedConfidence`), but the numbers are invented and every one is
    labelled **UNCALIBRATED**. The Confidence Engine and the Calibration job own
    the real thing.
-2. **Market data.** Prices, indicators, patterns and live-price ticks are
-   simulated. **No component may ever compute these** — the frontend renders,
-   it never decides (§6). A faked number in `apps/web` is exactly how this
-   platform once shipped a random "91%".
+2. **Signals.** Entries, stops, targets and the strategies that produced them are
+   still mock. Their entry prices are anchored to real market prices only so the
+   live-price verdict is coherent — the *signals themselves are fabricated*.
+3. **Indicators and patterns.** Still simulated. **No component may ever compute
+   these** — the frontend renders, it never decides (§6). A faked number in
+   `apps/web` is exactly how this platform once shipped a random "91%".
+
+### What is no longer faked
+
+**The live price is real.** It streams from Binance, through the market module,
+over the Socket.IO gateway, into `useLivePrice`. The seeded random walk that used
+to power it is **deleted**. When no price has arrived, the UI says
+"Waiting for price…" rather than inventing a plausible one — an honest blank beats
+a confident lie, because a trader cannot tell the two apart.
 
 **No strategy in [docs/06-STRATEGIES.md](docs/06-STRATEGIES.md) has been implemented or validated. Every
 expectancy figure there is a hypothesis, not a result.** Do not describe this

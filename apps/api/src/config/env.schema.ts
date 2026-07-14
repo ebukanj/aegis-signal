@@ -50,9 +50,36 @@ export const envSchema = z
       .enum(["fatal", "error", "warn", "info", "debug", "trace"])
       .default("info"),
 
-    /* ── Exchange (configured now, integrated later) ───────────────── */
+    /* ── Exchange ──────────────────────────────────────────────────── */
     CCXT_TIMEOUT: z.coerce.number().int().positive().default(15_000),
     WS_HEARTBEAT: z.coerce.number().int().positive().default(30_000),
+
+    /**
+     * DNS servers for exchange hostnames only. Comma-separated IPs.
+     *
+     * A development escape hatch. Many ISPs block cryptocurrency exchanges at
+     * the DNS layer, and the failure is indistinguishable from an exchange
+     * outage: `api.binance.com` simply does not resolve. Setting this routes
+     * exchange lookups — and nothing else — through a resolver that answers
+     * honestly.
+     *
+     * Leave it UNSET in production. A VPS has no reason to filter the exchanges
+     * we depend on, and hard-coding DNS servers we do not operate is an outage
+     * scheduled by someone else.
+     */
+    EXCHANGE_DNS_SERVERS: z
+      .string()
+      .optional()
+      .refine(
+        (value) =>
+          value === undefined ||
+          value
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .every((s) => z.ipv4().safeParse(s).success || z.ipv6().safeParse(s).success),
+        "EXCHANGE_DNS_SERVERS must be a comma-separated list of IP addresses",
+      ),
 
     /* ── Integrations (optional until their milestone) ─────────────── */
     TELEGRAM_TOKEN: z.string().optional(),
@@ -85,6 +112,21 @@ export const envSchema = z
         code: "custom",
         path: ["APP_URL"],
         message: "APP_URL cannot point at localhost in production",
+      });
+    }
+
+    /*
+     * A DNS override is a workaround for a filtered development network. In
+     * production it is a third party we did not choose, sitting in front of every
+     * exchange we depend on — and if it goes down, so does our market data.
+     */
+    if (env.EXCHANGE_DNS_SERVERS) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["EXCHANGE_DNS_SERVERS"],
+        message:
+          "EXCHANGE_DNS_SERVERS is a development escape hatch for ISP-level DNS " +
+          "filtering. Unset it in production and use the host's resolver.",
       });
     }
   });
