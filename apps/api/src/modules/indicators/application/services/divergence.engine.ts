@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { Candle } from "@aegis/contracts";
 import type { Maybe } from "../math/rolling";
+import { findPivots } from "../math/pivots";
 
 /**
  * Divergence — price and momentum telling different stories.
@@ -151,49 +152,54 @@ export class DivergenceEngine {
   /* ── Pivots ──────────────────────────────────────────────────────── */
 
   /**
-   * A pivot low: a bar whose low is below the `strength` bars on EACH side.
+   * Pivots, from the ONE pivot algorithm (`math/pivots.ts`).
    *
-   * The right-hand bars are what make it confirmed, and they are why the search
-   * stops `strength` bars short of the end. A "pivot" at the final bar is not a
-   * pivot; it is a low that has not been tested yet.
+   * This engine used to carry its own copy. It has been deleted, and that matters
+   * more than it sounds: the Structure Engine, every chart-pattern detector, and
+   * this all rest on the same question — *where is the swing?* Two implementations
+   * of that question do not stay in agreement. One gets a fix the other does not,
+   * and then the platform reports an intact uptrend while the divergence detector
+   * is comparing swings the structure engine has never heard of. Both answers look
+   * perfectly reasonable in isolation. That is the worst kind of bug there is.
+   *
+   * The `indicator[i] === null` filter stays here, because it is this engine's
+   * concern and nobody else's: a pivot we cannot read the oscillator at is a pivot
+   * we cannot compare, so it is not usable *for divergence* — while remaining a
+   * perfectly real swing for the Structure Engine.
    */
+  private swingsOfKind(
+    candles: readonly Candle[],
+    indicator: readonly Maybe[],
+    lookback: number,
+    strength: number,
+    kind: "HIGH" | "LOW",
+  ): SwingPoint[] {
+    const earliest = Math.max(0, candles.length - lookback);
+
+    return findPivots(candles, strength)
+      .filter((pivot) => pivot.kind === kind && pivot.index >= earliest)
+      .flatMap((pivot) => {
+        const value = indicator[pivot.index];
+        if (value === null || value === undefined) return [];
+
+        return [
+          {
+            index: pivot.index,
+            time: pivot.time,
+            price: pivot.price,
+            indicatorValue: value,
+          },
+        ];
+      });
+  }
+
   private pivotLows(
     candles: readonly Candle[],
     indicator: readonly Maybe[],
     lookback: number,
     strength: number,
   ): SwingPoint[] {
-    const out: SwingPoint[] = [];
-
-    const start = Math.max(strength, candles.length - lookback);
-    const end = candles.length - strength; // exclusive — the unconfirmed tail
-
-    for (let i = start; i < end; i++) {
-      const value = indicator[i];
-      if (value === null) continue; // a pivot we cannot compare is not usable
-
-      const low = candles[i].low;
-      let isPivot = true;
-
-      for (let j = i - strength; j <= i + strength; j++) {
-        if (j === i) continue;
-        if (candles[j].low < low) {
-          isPivot = false;
-          break;
-        }
-      }
-
-      if (isPivot) {
-        out.push({
-          index: i,
-          time: candles[i].time,
-          price: low,
-          indicatorValue: value,
-        });
-      }
-    }
-
-    return out;
+    return this.swingsOfKind(candles, indicator, lookback, strength, "LOW");
   }
 
   private pivotHighs(
@@ -202,37 +208,7 @@ export class DivergenceEngine {
     lookback: number,
     strength: number,
   ): SwingPoint[] {
-    const out: SwingPoint[] = [];
-
-    const start = Math.max(strength, candles.length - lookback);
-    const end = candles.length - strength;
-
-    for (let i = start; i < end; i++) {
-      const value = indicator[i];
-      if (value === null) continue;
-
-      const high = candles[i].high;
-      let isPivot = true;
-
-      for (let j = i - strength; j <= i + strength; j++) {
-        if (j === i) continue;
-        if (candles[j].high > high) {
-          isPivot = false;
-          break;
-        }
-      }
-
-      if (isPivot) {
-        out.push({
-          index: i,
-          time: candles[i].time,
-          price: high,
-          indicatorValue: value,
-        });
-      }
-    }
-
-    return out;
+    return this.swingsOfKind(candles, indicator, lookback, strength, "HIGH");
   }
 
   /* ── Scoring ─────────────────────────────────────────────────────── */

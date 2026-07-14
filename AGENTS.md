@@ -103,11 +103,12 @@ system. Keep it accurate; a stale reality section is a defect.
 | `apps/web` | **Built and polished.** Next.js 15. Renders **mock signals**, but the **live price is now real** (see below). Zero lint errors, strict TypeScript, build green. Seven workspaces: Signals · Scanner · Strategies · Insights · Track Record · Notifications · Settings (+ Admin). |
 | `packages/contracts` | **Built and tested.** 56 tests. The one definition of every DTO, domain enum, indicator, pattern and invariant. |
 | Strategies | **Six plain-English documents**, not code ([ADR-023](docs/adr/ADR-023-strategy-as-document.md)). Vocabulary covers 47 indicators, divergence, market structure and chart patterns ([ADR-024](docs/adr/ADR-024-earned-confidence-and-the-pattern-vocabulary.md)). **None is implemented or validated. All are UNPROVEN.** |
-| `apps/api` | **Built through Milestone 04.** 390 tests. NestJS, Prisma, Redis, BullMQ, Pino, Terminus. `/health` checks database, redis, queue **and exchange connectivity**. |
+| `apps/api` | **Built through Milestone 05.** 429 tests. NestJS, Prisma, Redis, BullMQ, Pino, Terminus. `/health` checks database, redis, queue **and exchange connectivity**. |
 | `packages/database` | **Built.** Prisma schema + local Postgres (`aegis_signal`). |
 | **Market Data & Exchange Layer** | **BUILT AND LIVE.** Real Binance + Bybit data. CCXT REST, native Binance WebSocket, symbol registry, circuit breaker, rate limiter, boundary normalizer, Redis cache, Socket.IO gateway. **Real candles and real prices flow end to end.** |
-| **Indicator Engine** | **BUILT.** All 47 contract indicators, cross-checked against an independent library on trending/ranging/volatile markets and verified on live BTC candles. Registry, multi-timeframe resolver, Redis cache, validation gate, 16 operators, divergence engine, benchmark suite. See [docs/08-INDICATORS.md](docs/08-INDICATORS.md). |
-| Pattern · Strategy · Risk · Signal · Confidence · Calibration engines | **Not built.** Indicators now produce evidence, and nothing consumes it yet. |
+| **Indicator Engine** | **BUILT.** All 47 contract indicators, cross-checked against an independent library and verified on live BTC candles. Registry, multi-timeframe resolver, Redis cache, validation gate, 16 operators, divergence engine, benchmark suite. See [docs/08-INDICATORS.md](docs/08-INDICATORS.md). |
+| **Pattern Engine** | **BUILT.** 24 detectors: swings, market structure (BOS/CHoCH), zones, liquidity sweeps, FVGs, order blocks, flags, wedges, triangles, channels, double/triple tops. Every detection carries evidence AND weaknesses. Guarded by a false-positive suite over random walks. **Head & shoulders, cup & handle and Elliott waves remain REFUSED** (ADR-024) — see [docs/09-PATTERNS.md](docs/09-PATTERNS.md). |
+| Strategy · Risk · Signal · Confidence · Calibration engines | **Not built.** Indicators and patterns now produce evidence, and nothing consumes it yet. |
 | Notifications · AI layer | **Not built.** |
 
 ### What the frontend still fakes, and must stop faking

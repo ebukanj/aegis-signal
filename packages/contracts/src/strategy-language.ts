@@ -202,6 +202,41 @@ export const PATTERN_WORDS: Record<
     meaning:
       "A flat floor with falling highs. Sellers keep accepting less while the floor holds — usually it eventually gives.",
   },
+  SYMMETRICAL_TRIANGLE: {
+    label: "a symmetrical triangle",
+    meaning:
+      "Highs falling and lows rising at the same time — the market is coiling. It says a big move is coming; it does NOT say which way, and any tool that claims otherwise is guessing.",
+  },
+  ASCENDING_CHANNEL: {
+    label: "a rising channel",
+    meaning:
+      "Highs and lows both climbing between two parallel lines. An orderly uptrend — and the upper line is where buyers have repeatedly run out of steam.",
+  },
+  DESCENDING_CHANNEL: {
+    label: "a falling channel",
+    meaning:
+      "Highs and lows both falling between two parallel lines. An orderly downtrend, with sellers reliably reappearing at the upper line.",
+  },
+  TRIPLE_TOP: {
+    label: "a triple top",
+    meaning:
+      "Price failed at the same ceiling three times. More telling than a double top: the third failure means buyers have now been rejected there twice after already knowing it was a ceiling.",
+  },
+  TRIPLE_BOTTOM: {
+    label: "a triple bottom",
+    meaning:
+      "Price held the same floor three times. Buyers keep showing up at exactly that level.",
+  },
+  EQUAL_HIGHS: {
+    label: "equal highs",
+    meaning:
+      "Two or more highs at effectively the same price. Above them sits a pool of stop orders — which is precisely why price is often dragged up through them before reversing.",
+  },
+  EQUAL_LOWS: {
+    label: "equal lows",
+    meaning:
+      "Two or more lows at effectively the same price, with a pool of stop orders sitting below them. A magnet, not a floor.",
+  },
 };
 
 export function describeOperand(operand: Operand): string {

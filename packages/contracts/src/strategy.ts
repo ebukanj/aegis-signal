@@ -200,9 +200,21 @@ export const patternSchema = z.enum([
   "ORDER_BLOCK", // the candle that caused the move
   "RANGE", // no trend: a floor and a ceiling
 
+  /**
+   * Equal highs / equal lows — a liquidity pool, in plain sight.
+   *
+   * Two or more swings at the same price are two or more clusters of stop orders
+   * sitting just beyond it. Objective: "within N% of each other" is a measurement,
+   * not an interpretation.
+   */
+  "EQUAL_HIGHS",
+  "EQUAL_LOWS",
+
   // ── Reversal shapes — objective enough to trust
   "DOUBLE_TOP",
   "DOUBLE_BOTTOM",
+  "TRIPLE_TOP",
+  "TRIPLE_BOTTOM",
 
   // ── Geometry — real, but tunable. Always quality-scored.
   "BULL_FLAG",
@@ -212,8 +224,31 @@ export const patternSchema = z.enum([
   "RISING_WEDGE",
   "ASCENDING_TRIANGLE",
   "DESCENDING_TRIANGLE",
+  "SYMMETRICAL_TRIANGLE",
+  "ASCENDING_CHANNEL",
+  "DESCENDING_CHANNEL",
 ]);
 export type Pattern = z.infer<typeof patternSchema>;
+
+/**
+ * STILL REFUSED, and this is not an oversight to be helpfully fixed:
+ *
+ *   head & shoulders · inverse head & shoulders · cup & handle ·
+ *   rounded top / bottom · broadening wedge · Elliott waves
+ *
+ * Ten traders draw a neckline ten different ways. A "deterministic" detector for
+ * these would not be detecting anything — it would be picking ONE arbitrary
+ * interpretation, stamping a quality score on it, and presenting the result as a
+ * measurement. That is manufacturing certainty, which is the single thing this
+ * platform exists not to do (ADR-024).
+ *
+ * A broadening wedge is the wedge family's version of the same problem: its
+ * trendlines diverge, so almost any choppy stretch of chart can be fitted to it.
+ *
+ * `pattern-result.spec.ts` asserts this. If a future milestone asks for them
+ * again, that is a request to overturn ADR-024, and it needs an ADR — not a
+ * quiet addition to this list.
+ */
 
 /** Patterns whose detection is geometric and therefore a matter of degree. */
 export const GEOMETRIC_PATTERNS: Pattern[] = [
@@ -224,6 +259,27 @@ export const GEOMETRIC_PATTERNS: Pattern[] = [
   "RISING_WEDGE",
   "ASCENDING_TRIANGLE",
   "DESCENDING_TRIANGLE",
+  "SYMMETRICAL_TRIANGLE",
+  "ASCENDING_CHANNEL",
+  "DESCENDING_CHANNEL",
+];
+
+/**
+ * Patterns that are objectively true or false — they happened, or they did not.
+ *
+ * These score `quality: 1` by definition. A break of structure is not "0.8 of a
+ * break": price either took out the swing high or it did not. Scoring them on a
+ * curve would be inventing doubt to look rigorous, which is the mirror image of
+ * inventing certainty and just as dishonest.
+ */
+export const OBJECTIVE_PATTERNS: Pattern[] = [
+  "HIGHER_HIGH_HIGHER_LOW",
+  "LOWER_HIGH_LOWER_LOW",
+  "BREAK_OF_STRUCTURE",
+  "CHANGE_OF_CHARACTER",
+  "FAIR_VALUE_GAP",
+  "EQUAL_HIGHS",
+  "EQUAL_LOWS",
 ];
 
 /* ── Operands ──────────────────────────────────────────────────────── */

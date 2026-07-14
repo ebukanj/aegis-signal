@@ -12,6 +12,7 @@ import { EventsModule } from "./core/events/events.module";
 import { HealthModule } from "./health/health.module";
 import { MarketModule } from "./modules/market/market.module";
 import { IndicatorModule } from "./modules/indicators/indicator.module";
+import { PatternModule } from "./modules/patterns/pattern.module";
 
 /**
  * The application.
@@ -75,8 +76,15 @@ import { IndicatorModule } from "./modules/indicators/indicator.module";
     IndicatorModule,
 
     /*
+     * Patterns interpret what the indicators measure. Indicators say "RSI is 28.3";
+     * patterns say "price swept the lows and reclaimed". The second cannot be
+     * expressed as an indicator comparison, which is why this module exists.
+     */
+    PatternModule,
+
+    /*
      * Still to come, in pipeline order:
-     *   PatternModule, ConditionModule, StrategyModule, RiskModule,
+     *   ConditionModule, StrategyModule, RiskModule,
      *   ConfidenceModule, SignalModule, CalibrationModule, LedgerModule,
      *   InsightModule, NotificationModule
      * See docs/07-BACKEND_REQUIREMENTS.md.
