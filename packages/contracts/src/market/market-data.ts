@@ -40,11 +40,39 @@ export const candleSchema = z
     close: priceSchema,
     /** Base-asset volume. May be zero on a dead bar; never negative. */
     volume: z.number().nonnegative().finite(),
+
+    /**
+     * Volume from BUYERS lifting the ask — the aggressive half of `volume`.
+     *
+     * OHLCV cannot tell you who was in a hurry. Both sides of every trade are
+     * counted in `volume`, so a bar that fell 3% on huge volume and a bar that
+     * rose 3% on huge volume look identical in it. This field is the difference:
+     * `takerBuyVolume` is the part that was buyers crossing the spread, and
+     * `volume - takerBuyVolume` is the part that was sellers. That is what
+     * Cumulative Volume Delta reads, and it is why CVD can tell forced selling
+     * from conviction selling when OBV cannot.
+     *
+     * **Nullable, and the null is the honest answer.** Binance reports it; Bybit
+     * does not. A zero here would claim "not one buyer lifted the ask this bar",
+     * which is a statement about the market rather than about our data — and a
+     * strategy would trade on it. When it is null, CVD returns null and the
+     * strategy stands down. Never <= volume is not enforced by the exchange but
+     * is guaranteed by the refinement below.
+     */
+    takerBuyVolume: z.number().nonnegative().finite().nullable().default(null),
   })
   .refine((c) => c.high >= c.low, {
     message: "A candle's high cannot be below its low",
     path: ["high"],
   })
+  .refine(
+    (c) => c.takerBuyVolume === null || c.takerBuyVolume <= c.volume,
+    {
+      message:
+        "Taker-buy volume cannot exceed total volume — buyers cannot have bought more than traded",
+      path: ["takerBuyVolume"],
+    },
+  )
   .refine((c) => c.high >= c.open && c.high >= c.close, {
     message: "A candle's high must be its highest price",
     path: ["high"],

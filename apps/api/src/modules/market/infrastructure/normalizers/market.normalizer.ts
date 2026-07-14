@@ -48,12 +48,23 @@ export class MarketNormalizer {
    * and a gap is visible; a *silently corrected* candle is not, and it poisons
    * every indicator downstream while looking perfectly healthy.
    */
+  /**
+   * `row` is `[time, open, high, low, close, volume]` — and OPTIONALLY a seventh
+   * element, the taker-buy volume.
+   *
+   * Only Binance sends it. Everywhere else the seventh element is absent, which
+   * becomes `null`, which makes CVD return `null`, which makes a strategy reading
+   * CVD stand down. That chain is deliberate end to end: the alternative is a
+   * zero, and a zero here is a *claim* — "not one buyer lifted the ask this bar" —
+   * that a strategy would happily trade on.
+   */
   candle(exchange: ExchangeId, row: unknown): Candle | null {
     if (!Array.isArray(row) || row.length < 6) {
       return this.reject(exchange, "candle", "malformed OHLCV row");
     }
 
-    const [time, open, high, low, close, volume] = row as unknown[];
+    const [time, open, high, low, close, volume, takerBuyVolume] =
+      row as unknown[];
 
     const parsed = candleSchema.safeParse({
       time: Number(time),
@@ -62,6 +73,10 @@ export class MarketNormalizer {
       low: Number(low),
       close: Number(close),
       volume: Number(volume),
+      takerBuyVolume:
+        takerBuyVolume === undefined || takerBuyVolume === null
+          ? null
+          : Number(takerBuyVolume),
     });
 
     if (!parsed.success) {

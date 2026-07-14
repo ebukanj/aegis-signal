@@ -11,6 +11,7 @@ import { QueueModule } from "./core/queue/queue.module";
 import { EventsModule } from "./core/events/events.module";
 import { HealthModule } from "./health/health.module";
 import { MarketModule } from "./modules/market/market.module";
+import { IndicatorModule } from "./modules/indicators/indicator.module";
 
 /**
  * The application.
@@ -67,10 +68,17 @@ import { MarketModule } from "./modules/market/market.module";
     MarketModule,
 
     /*
+     * Indicators turn those candles into numbers. They provide evidence; they
+     * never make decisions — nothing in here knows what a strategy or a signal
+     * is, and that boundary is what makes every layer above it auditable.
+     */
+    IndicatorModule,
+
+    /*
      * Still to come, in pipeline order:
-     *   IndicatorModule, PatternModule, ConditionModule, StrategyModule,
-     *   RiskModule, ConfidenceModule, SignalModule, CalibrationModule,
-     *   LedgerModule, InsightModule, NotificationModule
+     *   PatternModule, ConditionModule, StrategyModule, RiskModule,
+     *   ConfidenceModule, SignalModule, CalibrationModule, LedgerModule,
+     *   InsightModule, NotificationModule
      * See docs/07-BACKEND_REQUIREMENTS.md.
      *
      * NOTHING MAY SKIP THE RISK ENGINE. When a module is added here, that is

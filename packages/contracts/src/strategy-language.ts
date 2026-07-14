@@ -1,4 +1,4 @@
-import { BAR_COUNT_OPERATORS } from "./strategy";
+import { BAR_COUNT_OPERATORS, RANGE_OPERATORS } from "./strategy";
 import type {
   Condition,
   Indicator,
@@ -94,9 +94,14 @@ const OPERATOR_WORDS: Record<Operator, string> = {
   gte: "is at least",
   lt: "is below",
   lte: "is at most",
+  eq: "is exactly",
+  neq: "is not",
   crosses_above: "crosses above",
   crosses_below: "crosses below",
   between: "is between",
+  outside_range: "is outside",
+  above_average: "is above its own average over",
+  below_average: "is below its own average over",
   rising: "has been rising for",
   falling: "has been falling for",
   diverges_bullish: "shows bullish divergence over",
@@ -230,7 +235,8 @@ export function describeCondition(condition: Condition): string {
     return `${left} ${op} ${bars} ${bars === 1 ? "bar" : "bars"}`;
   }
 
-  if (condition.op === "between" && condition.rightUpper) {
+  // "price is between 40 and 60" / "RSI is outside 30 and 70"
+  if ((RANGE_OPERATORS as string[]).includes(condition.op) && condition.rightUpper) {
     return `${left} ${op} ${right} and ${describeOperand(condition.rightUpper)}`;
   }
 

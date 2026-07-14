@@ -1,12 +1,12 @@
 import { EventEmitter } from "node:events";
 import WebSocket from "ws";
-import type { Timeframe } from "@aegis/contracts";
+import type { Candle, Timeframe } from "@aegis/contracts";
 import type { ExchangeConfig } from "../../market.config";
 import type { StreamSubscription } from "../../domain/exchange-adapter.interface";
 import type { SymbolRegistry } from "../../domain/symbol-registry";
 import type { MarketNormalizer } from "../normalizers/market.normalizer";
 import type { LookupFunction } from "../exchange-dns";
-import { CcxtRestAdapter } from "./ccxt-rest.adapter";
+import { CcxtRestAdapter, timeframeMs } from "./ccxt-rest.adapter";
 
 /**
  * Binance — REST via CCXT, live data via a native WebSocket.
@@ -92,6 +92,82 @@ export class BinanceAdapter extends CcxtRestAdapter {
 
   protected override activeSubscriptionCount(): number {
     return this.subscriptions.size;
+  }
+
+  /* ── Candles, with the half of volume that OHLCV throws away ─────── */
+
+  /**
+   * Binance's RAW kline endpoint, not ccxt's `fetchOHLCV`.
+   *
+   * `fetchOHLCV` returns six columns and drops the rest. One of the columns it
+   * drops is `takerBuyBaseAssetVolume` — the volume that was BUYERS crossing the
+   * spread — and without it Cumulative Volume Delta cannot be computed at all.
+   * Not computed badly: not computed. CVD is how a strategy tells forced selling
+   * (liquidations hitting bids) from conviction selling (holders leaving), and
+   * Support Reclaim reads it.
+   *
+   * So we call the endpoint ccxt is wrapping, and keep column 9. Everything else
+   * — the breaker, the limiter, the normalizer — is unchanged, because this is
+   * still a REST call to Binance and it must obey the same rules as every other.
+   *
+   * Bybit's adapter does not override this, gets six columns, and reports `null`.
+   * That is the correct answer for an exchange that does not publish it.
+   */
+  override async fetchCandles(input: {
+    symbol: string;
+    timeframe: Timeframe;
+    limit: number;
+    since?: number;
+  }): Promise<{ candles: Candle[]; lastIsForming: boolean }> {
+    const native = this.native(input.symbol);
+
+    // The raw endpoint speaks Binance's own symbol ("BTCUSDT"), not ccxt's
+    // unified spelling ("BTC/USDT:USDT").
+    const market = this.client.market(native);
+
+    const rows = await this.guard(
+      () =>
+        (
+          this.client as unknown as {
+            fapiPublicGetKlines: (p: object) => Promise<unknown[]>;
+          }
+        ).fapiPublicGetKlines({
+          symbol: market.id,
+          interval: input.timeframe,
+          limit: input.limit,
+          ...(input.since ? { startTime: input.since } : {}),
+        }),
+      "fapiPublicGetKlines",
+    );
+
+    /*
+     * Binance's kline row is twelve columns. We take seven:
+     *
+     *   [0] open time   [1] open   [2] high   [3] low   [4] close   [5] volume
+     *   [9] taker buy base volume
+     *
+     * The normalizer validates them exactly as it validates everything else — a
+     * row from a raw endpoint gets no more trust than a row from ccxt.
+     */
+    const normalized = this.normalizer.candles(
+      this.id,
+      (rows as unknown[][]).map((row) => [
+        row[0],
+        row[1],
+        row[2],
+        row[3],
+        row[4],
+        row[5],
+        row[9],
+      ]),
+    );
+
+    const last = normalized.at(-1);
+    const lastIsForming = last
+      ? last.time + timeframeMs(input.timeframe) > Date.now()
+      : false;
+
+    return { candles: normalized, lastIsForming };
   }
 
   /**
@@ -367,6 +443,9 @@ export class BinanceAdapter extends CcxtRestAdapter {
     const k = data.k as Record<string, unknown> | undefined;
     if (!k) return;
 
+    // `V` (capital) is taker-buy base volume; `v` (lower) is total volume. They
+    // differ by one letter and by the entire meaning of CVD — mixing them up would
+    // make every bar look like it was 100% aggressive buying.
     const candle = this.normalizer.candle(this.id, [
       k.t,
       k.o,
@@ -374,6 +453,7 @@ export class BinanceAdapter extends CcxtRestAdapter {
       k.l,
       k.c,
       k.v,
+      k.V,
     ]);
 
     if (!candle) return;

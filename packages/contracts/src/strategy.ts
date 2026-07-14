@@ -103,14 +103,48 @@ export const DERIVATIVES_INDICATORS: Indicator[] = [
 
 /* ── Operators ─────────────────────────────────────────────────────── */
 
+/**
+ * The operators a condition may use.
+ *
+ * **One way to say each thing.** There is no `slope_positive` next to `rising`,
+ * and no `inside_range` next to `between` — synonyms look generous and are a tax:
+ * two operators that mean the same thing are two code paths to keep in agreement,
+ * two entries in the strategy editor, and one day a bug in only one of them.
+ */
 export const operatorSchema = z.enum([
   "gt", // >
   "gte", // >=
   "lt", // <
   "lte", // <=
+
+  /**
+   * Exact equality — and a warning.
+   *
+   * `eq` on a *computed* indicator is almost always a mistake: an EMA is a float,
+   * and floats are not equal to round numbers. It is meaningful against a
+   * discrete operand (a Supertrend direction, a bar count), and treacherous
+   * everywhere else. The evaluator compares with a tolerance rather than `===`
+   * for exactly this reason.
+   */
+  "eq",
+  "neq",
+
   "crosses_above",
   "crosses_below",
+
+  /** Within [min, max], inclusive. The spec's "inside range" is this. */
   "between",
+  /** Outside [min, max]. Not `!between` — an unset value is neither. */
+  "outside_range",
+
+  /**
+   * Against the indicator's OWN mean over N bars.
+   *
+   * "RSI above its own average" adapts to the instrument; "RSI above 50" does
+   * not. The right operand is the lookback N.
+   */
+  "above_average",
+  "below_average",
 
   /** Slope over N bars: "MACD histogram rising for 3 bars". */
   "rising",
@@ -131,9 +165,14 @@ export type Operator = z.infer<typeof operatorSchema>;
 export const BAR_COUNT_OPERATORS: Operator[] = [
   "rising",
   "falling",
+  "above_average",
+  "below_average",
   "diverges_bullish",
   "diverges_bearish",
 ];
+
+/** These take a [min, max] pair rather than a single value. */
+export const RANGE_OPERATORS: Operator[] = ["between", "outside_range"];
 
 /* ── Patterns ──────────────────────────────────────────────────────── */
 
