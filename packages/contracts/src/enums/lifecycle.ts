@@ -63,10 +63,77 @@ export const rejectionGateSchema = z.enum([
   "DUPLICATE",
   /** The strategy is switched off, or has never earned a record. */
   "STRATEGY_INELIGIBLE",
+
+  /**
+   * The candidate itself is malformed. A stop on the wrong side, a target that
+   * cannot be reached, a missing regime.
+   *
+   * This is not a market rejection — it is a BUG, upstream, and it is reported as
+   * one. A trade rejected for a bad spread is the machine working; a trade rejected
+   * because the candidate was nonsense is the machine catching something that should
+   * never have reached it.
+   */
+  "INVALID_CANDIDATE",
+
+  /** Volatility is outside what the policy allows. A stop sized for yesterday. */
+  "VOLATILITY",
+
+  /**
+   * The reward does not pay for the risk.
+   *
+   * A 1:1 trade needs to win more than half the time just to break even before fees,
+   * and no strategy in this platform has earned the right to claim that.
+   */
+  "RISK_REWARD",
+
+  /**
+   * The stop is in a place that cannot work.
+   *
+   * Too tight — inside the noise this instrument routinely produces, so it is taken
+   * out by nothing at all. Or too wide — the trade is then risking far more than the
+   * setup was ever worth.
+   */
+  "STOP_QUALITY",
+
+  /**
+   * Entry sits directly into structure: a LONG into resistance, a SHORT into support.
+   *
+   * The trade is being taken at the exact price where the market has repeatedly
+   * turned around. It may still work; it is being asked to do so from the worst
+   * possible starting point.
+   */
+  "STRUCTURE",
+
+  /**
+   * Leverage would put liquidation before the stop.
+   *
+   * The most expensive mistake in leveraged trading: the account is closed out before
+   * the trade is even proven wrong, and the stop is decoration.
+   */
+  "LIQUIDATION_RISK",
+
+  /**
+   * The evidence is STALE. Old candles, a frozen feed, a delayed evaluation.
+   *
+   * Not "we cannot see" — "what we can see is out of date", which is worse, because a
+   * stale price looks exactly like a live one.
+   */
+  "STALE_DATA",
+
+  /** The exchange is down, degraded, or its market feed is unhealthy. */
+  "EXCHANGE_HEALTH",
 ]);
 export type RejectionGate = z.infer<typeof rejectionGateSchema>;
 
 export const REJECTION_GATE_LABEL: Record<RejectionGate, string> = {
+  INVALID_CANDIDATE: "Malformed candidate",
+  VOLATILITY: "Volatility",
+  RISK_REWARD: "Risk / reward",
+  STOP_QUALITY: "Stop placement",
+  STRUCTURE: "Market structure",
+  LIQUIDATION_RISK: "Liquidation risk",
+  STALE_DATA: "Stale data",
+  EXCHANGE_HEALTH: "Exchange health",
   ENTRY_CONDITIONS: "Entry conditions",
   LIQUIDITY: "Liquidity",
   SPREAD: "Spread",

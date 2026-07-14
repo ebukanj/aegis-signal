@@ -9,6 +9,7 @@ import { randomUUID } from "node:crypto";
 import type {
   Candle,
   ExchangeId,
+  OrderBookSummary,
   Ticker,
   Timeframe,
 } from "@aegis/contracts";
@@ -362,6 +363,30 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
     await this.cache.setTicker(id, symbol, ticker);
 
     return ticker;
+  }
+
+  /**
+   * The order book — the only place the platform can see the SPREAD.
+   *
+   * The Risk Engine's spread gate depends on this, and the spread is not a detail: an
+   * edge of 0.3% behind a spread of 0.08% is an edge that is eaten before it arrives.
+   * A platform that never looked would happily approve trades whose profit was already
+   * gone at the moment of entry.
+   *
+   * Cached for 5 seconds and no longer. Depth evaporates in seconds, and a stale book
+   * is worse than none: it reports a tight spread on a market that has just gone thin,
+   * which is precisely when a trader most needs to be told.
+   */
+  async orderBook(symbol: string, exchange?: ExchangeId): Promise<OrderBookSummary> {
+    const id = exchange ?? "BINANCE";
+
+    const cached = await this.cache.getOrderBook(id, symbol);
+    if (cached) return cached;
+
+    const book = await this.adapterFor(exchange).fetchOrderBook(symbol);
+    await this.cache.setOrderBook(id, symbol, book);
+
+    return book;
   }
 
   /** Latest price for every subscribed symbol. Served from cache. */

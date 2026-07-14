@@ -15,6 +15,7 @@ import { IndicatorModule } from "./modules/indicators/indicator.module";
 import { PatternModule } from "./modules/patterns/pattern.module";
 import { RegimeModule } from "./modules/regime/regime.module";
 import { StrategyModule } from "./modules/strategy/strategy.module";
+import { RiskModule } from "./modules/risk/risk.module";
 
 /**
  * The application.
@@ -99,6 +100,13 @@ import { StrategyModule } from "./modules/strategy/strategy.module";
      * NOTHING MAY SKIP THE RISK ENGINE. A candidate is not a signal.
      */
     StrategyModule,
+
+    /*
+     * THE VETO. Nothing reaches a trader that this engine did not check, and if it says
+     * no, the platform says no. Its power to refuse is not an obstacle to the product —
+     * it IS the product.
+     */
+    RiskModule,
 
     /*
      * Still to come, in pipeline order:

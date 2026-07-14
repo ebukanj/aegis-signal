@@ -104,7 +104,30 @@
       "Bash(curl -s http://127.0.0.1:4000/health/info)",
       "Bash(curl -s http://127.0.0.1:4000/api/v1/nonexistent)",
       "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const e=JSON.parse\\(d\\).error;console.log\\('code:',e.code,'| requestId:',e.requestId.slice\\(0,8\\)+'…','| path:',e.path\\)}\\)\")",
-      "Bash(pnpm test *)"
+      "Bash(pnpm test *)",
+      "Bash(grep -iE \"market|binance|symbol|error|exchange\" /tmp/m3.log | tail -12)",
+      "Bash(grep -iE \"Unhandled exception|does not list|Connected|Symbol registry|Subscribed|WebSocket|failed to connect\" /tmp/m4.log | tail -8; echo \"═══ raw error ═══\"; grep -A3 \"Unhandled exception\" /tmp/m4.log | head -6)",
+      "Bash(grep -B2 -A12 \"Exchange failed to connect\" /tmp/m4.log | head -20)",
+      "Bash(node -p \"require\\('./package.json'\\).version\")",
+      "Bash(pnpm exec *)",
+      "Bash(sed -E 's/\\\\x1b\\\\[[0-9;]*m//g' /tmp/m5.log | grep -aiE \"DNS|exchange|market|registry|error|listen\" | head -25)",
+      "PowerShell(Get-Process node -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Force -ErrorAction SilentlyContinue)",
+      "Bash(curl -s -m 20 http://127.0.0.1:4000/health)",
+      "Bash(grep -E \"\\\\.env$|\\\\.env\\\\.local$\")",
+      "Bash(node -e \"const t=require\\('technicalindicators'\\); console.log\\('reference lib OK — RSI/EMA/MACD/ATR/BB present:', ['RSI','EMA','SMA','MACD','ATR','BollingerBands','ADX','CCI','MFI','Stochastic'].every\\(k=>k in t\\)\\);\")",
+      "Bash(git commit *)",
+      "Bash(sed -i 's|import { GEOMETRIC_PATTERNS, patternSchema } from \"../strategy\";|import { GEOMETRIC_PATTERNS, OBJECTIVE_PATTERNS, patternSchema } from \"../strategy\";|' src/market/pattern-result.ts)",
+      "Bash(node -e \"const z=require\\('zod'\\); console.log\\('partialRecord:', typeof z.partialRecord\\)\")",
+      "Bash(node -e \"import\\('zod'\\).then\\(z=>console.log\\('partialRecord:', typeof z.partialRecord\\)\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(python \"C:/Users/HP/AppData/Local/Temp/claude/c--Users-HP-Desktop-We-Projects-Aegis-Signal/0ff01ffd-e100-4378-adfe-8272e6fbb41d/scratchpad/fix_dwell.py\")",
+      "Bash(node live-risk.mjs)",
+      "Bash(rm -f live-risk.mjs)",
+      "Bash(node live-veto.mjs)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
     ]
   }
 }

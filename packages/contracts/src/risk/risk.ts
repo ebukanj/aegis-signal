@@ -133,11 +133,45 @@ export type RiskLimits = z.infer<typeof riskLimitsSchema>;
 
 export const riskAssessmentSchema = z.object({
   level: riskLevelSchema,
-  /** 0–100 aggregate exposure heat. */
+  /**
+   * 0–100 aggregate risk.
+   *
+   * **Risk is not confidence, and this is not a probability.** A risk score of 21 does
+   * not mean the trade wins 79% of the time — it means the *conditions around* the
+   * trade are clean: the book is deep, the spread is tight, the regime fits. A
+   * beautiful setup in a terrible market and a mediocre setup in a perfect one are
+   * different questions, and this answers only the second.
+   */
   score: ratioSchema,
   factors: z.array(riskFactorSchema),
   limits: riskLimitsSchema,
   warnings: z.array(z.string()),
+
+  /**
+   * THE RISKS THIS ENGINE COULD NOT LOOK AT.
+   *
+   * ── The most important field added in M08 ──
+   *
+   * Some gates cannot see anything yet. There is no news feed, so nobody knows if CPI
+   * prints in ten minutes. There is no ledger, so portfolio heat is unknowable. There
+   * is no derivatives feed, so funding is invisible.
+   *
+   * The brief says "if the Risk Engine is uncertain, it must reject" — and if that
+   * applied to gates that *do not exist yet*, the platform would emit nothing at all
+   * until three more milestones land. So a gate whose feed has not been BUILT does not
+   * veto.
+   *
+   * But it must never read as *clean*. The contract already says it: **a missing
+   * measurement must read as missing, never as fine.** So every unassessed risk is
+   * named here, in plain English, and travels with the decision all the way to the
+   * trader. An approval that says "I did not check for news" is honest. An approval
+   * that quietly did not check is a lie with a green tick on it.
+   *
+   * A gate whose feed SHOULD be there and is not — a dead exchange, a frozen candle
+   * feed, an empty order book — is a different thing entirely, and it VETOES. Absent
+   * data that ought to be present is itself a risk signal.
+   */
+  unassessed: z.array(z.string()),
 });
 export type RiskAssessment = z.infer<typeof riskAssessmentSchema>;
 
