@@ -17,6 +17,11 @@ import { formatRelativeTime } from "@/lib/format";
  * instruction.
  */
 export function MarketSummaryCard({ summary }: { summary: MarketSummary }) {
+  // The summary is deterministic today (the AI layer is a later milestone). Label
+  // it honestly — an "AI" badge on a rule-generated line would be the exact kind of
+  // misattribution this platform refuses.
+  const isDeterministic = summary.model === "deterministic";
+
   return (
     <Card className="gap-3 p-5">
       <div className="flex items-center gap-2">
@@ -25,7 +30,7 @@ export function MarketSummaryCard({ summary }: { summary: MarketSummary }) {
           What&apos;s happening
         </h2>
         <span className="rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          AI
+          {isDeterministic ? "AUTO" : "AI"}
         </span>
         <span className="ml-auto text-xs text-muted-foreground">
           {formatRelativeTime(summary.generatedAt)}

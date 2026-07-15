@@ -41,6 +41,16 @@ export function FundamentalsFeed({
         </p>
       </div>
 
+      {fundamentals.length === 0 && (
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">
+            On-chain fundamentals are not live yet — whale flows and exchange
+            netflows arrive in a later milestone. The platform shows nothing here
+            rather than a fabricated figure.
+          </p>
+        </Card>
+      )}
+
       <div className="grid gap-2 sm:grid-cols-2">
         {fundamentals.map((item) => (
           <Card key={item.id} className="gap-2 p-4">

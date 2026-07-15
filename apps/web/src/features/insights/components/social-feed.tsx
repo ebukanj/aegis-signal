@@ -34,6 +34,16 @@ export function SocialFeed({ social }: { social: SocialSignal[] }) {
         </p>
       </div>
 
+      {social.length === 0 && (
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">
+            Social intelligence is not live yet — its collectors arrive in a later
+            milestone. Rather than show invented chatter, the platform shows nothing
+            here. Real news and risk flags above are live.
+          </p>
+        </Card>
+      )}
+
       <div className="space-y-2">
         {social.map((item) => {
           const manufactured = item.astroturfRatio > ASTROTURF_BLOCK_THRESHOLD;

@@ -61,6 +61,7 @@ export * from "./scanner";
 
 /* ── Insights — news, social, fundamentals, and the Risk Flag veto ──── */
 export * from "./insight";
+export * from "./insights-engine";
 
 /* ── Events — the pipeline, and it is immutable ────────────────────── */
 export * from "./events/events";

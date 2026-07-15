@@ -326,3 +326,53 @@ model LedgerAudit {
   @@index([signalId])
   @@index([action])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Milestone 12 — the Insights Engine. Context, never decisions.
+//
+// One normalized story, from one or more providers, classified deterministically.
+// `dedupeKey` merges the same story across outlets; `sources` preserves them all.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// One piece of normalized market intelligence. Append-mostly: an insight can be
+/// updated (a new outlet corroborates it, extending `sources`) but its
+/// classification is deterministic, so a re-run produces the same verdict.
+model Insight {
+  id String @id
+
+  provider String
+  source   String
+  sources  String[]
+
+  title       String
+  description  String
+  url         String?
+  language    String
+
+  publishedAt BigInt
+  collectedAt BigInt
+
+  category String
+  severity String
+  impact   String
+
+  /// Structured entities as JSON (kind/symbol/name), plus denormalised coin
+  /// symbols and tags as arrays for fast filtering and search.
+  entities Json
+  coins    String[]
+  tags     String[]
+
+  confidence Float
+
+  /// The fingerprint that merges the same story across providers. Unique — a
+  /// second outlet running the story updates the existing row rather than adding a
+  /// duplicate.
+  dedupeKey String @unique
+
+  createdAt DateTime @default(now())
+
+  @@index([category])
+  @@index([severity])
+  @@index([publishedAt])
+  @@index([coins])
+}

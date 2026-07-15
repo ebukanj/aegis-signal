@@ -1,14 +1,16 @@
 import type { InsightsFeed } from "@aegis/contracts";
-import { getMockInsights } from "@/features/insights/data/mock-insights";
+import { apiGet } from "@/lib/api";
 
 /**
- * Insights data access. Becomes a fetch when the AI/Intelligence layer ships.
- * The AI layer is a separate, slower service (SOLUTION_ARCHITECTURE §10).
+ * Insights data access — LIVE.
+ *
+ * News and risk flags come from the Insights Engine (M12), collected from real
+ * crypto-news sources and classified deterministically. Social intelligence and
+ * on-chain fundamentals are architecture-only this milestone — no live source yet
+ * — so the API returns them empty and the page shows an honest "not live" state
+ * rather than fabricated chatter. The market summary is a DETERMINISTIC context
+ * line (model: "deterministic"), never an AI one; the AI layer is a later service.
  */
-
-const simulate = <T>(data: T, delayMs: number): Promise<T> =>
-  new Promise((resolve) => setTimeout(() => resolve(data), delayMs));
-
 export const insightsApi = {
-  getFeed: (): Promise<InsightsFeed> => simulate(getMockInsights(), 700),
+  getFeed: (): Promise<InsightsFeed> => apiGet<InsightsFeed>("/insights"),
 };

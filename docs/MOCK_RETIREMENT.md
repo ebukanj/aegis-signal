@@ -43,7 +43,7 @@ endpoint ships, the mock is **deleted, not adapted**. Adapting it — keeping it
 | ~~`features/signals/data/mock-today.ts`~~ | ~~Today's feed~~ | **RETIRED (M10).** `GET /api/v1/signals/today` is live, and the feed subscribes to the `signals` socket for live updates. |
 | ~~`features/signals/data/mock-confidence.ts`~~ | ~~Confidence breakdown~~ | **RETIRED (M10).** Real `CalibratedConfidence` rides on the signal detail. |
 | ~~`features/signals/hooks/use-live-price.ts`~~ | ~~Live price~~ | **RETIRED in M03.** The seeded random walk is deleted. Price now streams from Binance over the `market` Socket.IO namespace (`price` event) via `lib/market-socket.ts`. **Entry status still computed in the hook — it belongs to the Risk Engine and moves there in M05.** | ✅ M03 |
-| `features/insights/data/mock-insights.ts` | News, social, fundamentals, Risk Flags | `GET /api/v1/insights` | M09 — Insights |
+| ~~`features/insights/data/mock-insights.ts`~~ | ~~News, risk flags~~ | **RETIRED (M12).** `GET /api/v1/insights` serves real classified news + corroborated risk flags. Social/fundamentals architecture-only (empty). |
 | ~~`features/track-record/data/mock-record.ts`~~ | ~~Track Record + reliability curve~~ | **RETIRED (M11).** `GET /api/v1/track-record` serves the Outcome Ledger's real settled trades + the calibration curve. |
 | `features/notifications/data/mock-notifications.ts` | Notification centre | `GET /api/v1/notifications` | M10 — Notifications |
 | `features/settings/data/mock-settings.ts` | Settings | `GET /api/v1/settings` | M11 — Users |
