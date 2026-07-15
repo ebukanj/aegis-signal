@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isProven } from "@aegis/contracts";
 import { insightsApi } from "@/features/insights/api/insights-api";
 import { signalsApi } from "@/features/signals/api/signals-api";
 import { useStrategyStore } from "@/features/strategies/stores/strategy-store";
-import type { TodaysSignals } from "@/features/signals/data/mock-today";
+import { onSignalsChanged } from "@/lib/signals-socket";
+import type { TodaysSignals } from "@/features/signals/api/signals-api";
 
 /**
  * Today's signals — filtered by the strategies you actually have switched on.
@@ -37,11 +38,32 @@ import type { TodaysSignals } from "@/features/signals/data/mock-today";
  */
 export function useTodaysSignals() {
   const strategies = useStrategyStore((s) => s.strategies);
+  const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: ["signals", "today"],
     queryFn: () => signalsApi.getTodaysSignals(),
+    /*
+     * A safety-net poll for FRESHNESS DECAY. The socket nudge handles discrete
+     * changes (a signal settled, a new one published) instantly; this slow refetch
+     * catches the continuous change — a signal ageing toward its expiry, its rank
+     * slipping as freshness decays — so the ordering stays live even when nothing
+     * has settled. 60s is far below a 1h bar, so the feed is never visibly stale.
+     */
+    refetchInterval: 60_000,
   });
+
+  /*
+   * The live wire. When the backend settles a signal or publishes one, it nudges;
+   * we refetch immediately. This is what makes a missed/stopped signal leave the
+   * feed on its own — the owner's requirement — without a manual refresh.
+   */
+  useEffect(() => {
+    return onSignalsChanged(() => {
+      void queryClient.invalidateQueries({ queryKey: ["signals", "today"] });
+      void queryClient.invalidateQueries({ queryKey: ["track-record"] });
+    });
+  }, [queryClient]);
 
   /**
    * The veto (ADR-023 §5). A coin that was just exploited or depegged is

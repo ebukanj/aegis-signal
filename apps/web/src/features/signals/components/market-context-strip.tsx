@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/tooltip";
 import { REGIME_META, RISK_META } from "@/constants/domain";
 import { formatRelativeTime } from "@/lib/format";
-import type { ScanContext } from "@/features/signals/data/mock-today";
+import type { ScanContext } from "@aegis/contracts";
 
 /**
  * Market context, in one line.

@@ -103,7 +103,7 @@ system. Keep it accurate; a stale reality section is a defect.
 | `apps/web` | **Built and polished.** Next.js 15. Renders **mock signals**, but the **live price is now real** (see below). Zero lint errors, strict TypeScript, build green. Seven workspaces: Signals · Scanner · Strategies · Insights · Track Record · Notifications · Settings (+ Admin). |
 | `packages/contracts` | **Built and tested.** 87 tests. **Owns the six strategy documents** — one copy, imported by both apps. The one definition of every DTO, domain enum, indicator, pattern and invariant. |
 | Strategies | **Six plain-English documents**, not code ([ADR-023](docs/adr/ADR-023-strategy-as-document.md)). Vocabulary covers 47 indicators, divergence, market structure and chart patterns ([ADR-024](docs/adr/ADR-024-earned-confidence-and-the-pattern-vocabulary.md)). **None is implemented or validated. All are UNPROVEN.** |
-| `apps/api` | **Built through Milestone 09.** 559 tests. NestJS, Prisma, Redis, BullMQ, Pino, Terminus. `/health` checks database, redis, queue **and exchange connectivity**. |
+| `apps/api` | **Built through Milestone 11.** 600 tests. NestJS, Prisma, Redis, BullMQ, Pino, Terminus. `/health` checks database, redis, queue **and exchange connectivity**. |
 | `packages/database` | **Built.** Prisma schema + local Postgres (`aegis_signal`). |
 | **Market Data & Exchange Layer** | **BUILT AND LIVE.** Real Binance + Bybit data. CCXT REST, native Binance WebSocket, symbol registry, circuit breaker, rate limiter, boundary normalizer, Redis cache, Socket.IO gateway. **Real candles and real prices flow end to end.** |
 | **Indicator Engine** | **BUILT.** All 47 contract indicators, cross-checked against an independent library and verified on live BTC candles. Registry, multi-timeframe resolver, Redis cache, validation gate, 16 operators, divergence engine, benchmark suite. See [docs/08-INDICATORS.md](docs/08-INDICATORS.md). |
@@ -112,34 +112,50 @@ system. Keep it accurate; a stale reality section is a defect.
 | **Strategy Evaluator** | **BUILT.** One generic document interpreter — **zero strategy-specific code, proven by a test that greps the module's own source**. Entry language: ALL-OF of [rule \| ANY-OF group], with NOT. Versioning: editing a rule bumps the version and **wipes the track record** (ADR-024). Produces CANDIDATES — no confidence, no approval, no risk validation. Verified on live BTC. See [docs/11-STRATEGY-EVALUATOR.md](docs/11-STRATEGY-EVALUATOR.md). |
 | **Risk Engine (The Veto)** | **BUILT.** 14 gates, every limit externalised in `risk.policy.ts` and checked for self-contradiction at boot. Sizes from the **stop**, never the leverage; walks leverage down until **liquidation clears the stop by 1.5R**, and vetoes if no level is safe. A feed that was never built (news, ledger, funding) reads **UNASSESSED and is named to the trader**; a feed that *should* be there and is dark **vetoes**. Verified on live BTC: a sane trade approved, four bad ones refused with the measurement. See [docs/12-RISK-ENGINE.md](docs/12-RISK-ENGINE.md). |
 | **Confidence & Calibration Engine** | **BUILT.** The trust layer. Kills the fabricated `randInt(52,92)+4` score for good. The **score** is named contributors with stated weights — real evidence, day one; the **probability** is earned only from outcomes. A background **replay** walks 2 years of real Binance history through the *same* evaluator, risk veto and score builder (no reimplementation), labels each setup (target-before-stop = WIN; a bar touching both = LOSS; neither = EXPIRED, a non-win), and fits **three** calibrators (shrinkage / Platt / isotonic) — shipping whichever has the best **out-of-sample** ECE. **Beta shrinkage** stops three lucky setups becoming a 100% win rate; **history and live are never merged** behind one number; every model is **versioned and never overwritten**. Prime stays barred (UNPROVEN, ADR-023 §4). See [docs/13-CONFIDENCE.md](docs/13-CONFIDENCE.md). |
-| Signal Engine · Notifications · AI layer | **Not built.** Approved, confidence-scored trades are produced and **nothing publishes them yet.** |
+| **Signal Engine (The Publisher)** | **BUILT.** The Editor-in-Chief. Orchestrates only — recomputes nothing. **Confluence** (agreement, computed here from already-computed evidence) is kept strictly separate from **confidence** (probability, from M09); ≥2 independent strategies agreeing are **fused into one signal** crediting all (ADR-021 §1), with zero confidence uplift until the ledger prices it. Deterministic ids → idempotency, dedup and reproducible replay. Freshness (a signal never outlives its conditions), a ranked **Prime budget** with per-symbol/strategy/hour caps, and an append-only lifecycle whose terminal states cannot be left. **Prime awards 0 today** — nothing is live-proven (ADR-023 §4), and that is correct, not a fault. Verified end-to-end against Postgres. See [docs/14-SIGNAL-ENGINE.md](docs/14-SIGNAL-ENGINE.md). |
+| **Outcome Ledger & Track Record** | **BUILT.** The permanent memory. Records every published signal immutably; **settlement is one-way and once** (a re-settle is refused and appended as a CORRECTION, never overwritten). Outcomes are computed from PRICE, never asserted — deterministic, and pessimistic on the one-bar-touched-both ambiguity (matches the M09 labeller). Settles R / PnL% / **MFE / MAE** / duration / exit reason. Track record states its own **basis** (NO_DATA / PROVISIONAL / ESTABLISHED) so a small sample can't pose as a record. A **Settlement Worker** monitors live price and settles resolved signals → the feed drops them live over the `signals` socket (**no refresh** — the owner's requirement). First real record: 48 settled, 29.2% win rate, −0.27R expectancy — Breakout loses money as written, recorded plainly. See [docs/15-LEDGER.md](docs/15-LEDGER.md). |
+| Notifications · AI layer | **Not built.** |
 
 ### What the frontend still fakes, and must stop faking
 
-1. **Confidence.** Mock scores are assembled in the honest *shape*
-   (`CalibratedConfidence`), but the numbers are invented and every one is
-   labelled **UNCALIBRATED**. The Confidence Engine and the Calibration job own
-   the real thing.
-2. **Signals.** Entries, stops, targets and the strategies that produced them are
-   still mock. Their entry prices are anchored to real market prices only so the
-   live-price verdict is coherent — the *signals themselves are fabricated*.
-3. **Indicators and patterns.** Still simulated. **No component may ever compute
-   these** — the frontend renders, it never decides (§6). A faked number in
-   `apps/web` is exactly how this platform once shipped a random "91%".
+The owner's standing directive (M10): **the app must run on live backend data — no
+mock data.** As each engine lands, its surface is wired to the real API and the
+mock is deleted in the same change (the [MOCK_RETIREMENT](docs/MOCK_RETIREMENT.md)
+rule — delete, never adapt).
+
+**Still on mock, because their backends do not exist yet:**
+
+1. **Scanner** — no scan endpoint yet (`mock-opportunities.ts`).
+2. **Insights** — News/Social/Fundamentals is Milestone 12 (`mock-insights.ts`).
+3. **Notifications · Settings · Admin** — later milestones.
+
+Each retires when its milestone ships. Prefer an **honest empty state** over
+invented content — silence is a feature (§1).
+
 4. **Sizing and the safe-leverage cap.** `position-calculator.tsx` re-derives
    position size, liquidation price and the highest safe leverage **in the
-   browser**. That arithmetic now has an owner — the Risk Engine — and two
-   implementations of a liquidation formula is one implementation too many. The
-   what-if sliders may stay; **the numbers must come from the decision**, and the
-   safe-leverage cap must be `leverage.suggested`, not a second guess at it.
+   browser**. That arithmetic has an owner — the Risk Engine — and two
+   implementations of a liquidation formula is one too many. The what-if sliders
+   may stay; **the numbers must come from the decision**.
 
 ### What is no longer faked
 
 **The live price is real.** It streams from Binance, through the market module,
 over the Socket.IO gateway, into `useLivePrice`. The seeded random walk that used
 to power it is **deleted**. When no price has arrived, the UI says
-"Waiting for price…" rather than inventing a plausible one — an honest blank beats
-a confident lie, because a trader cannot tell the two apart.
+"Waiting for price…" rather than inventing a plausible one.
+
+**Signals are real (M09–M10).** The Signals feed and detail render the platform's
+actual published signals from `GET /api/v1/signals/*` — real strategy evaluation,
+real risk approval, real calibrated confidence. `mock-today`, `mock-signal-details`
+and `mock-confidence` are **deleted**. The feed is **live**: it subscribes to the
+`signals` socket and refetches when a signal settles or publishes, so a
+missed/stopped signal leaves the feed without a refresh.
+
+**The Track Record is real (M11).** The scoreboard renders the Outcome Ledger's
+real settled trades from `GET /api/v1/track-record`, with the reliability curve
+from the calibration model. `mock-record` is **deleted**. Today it reads 48 settled
+· 29.2% win rate · −0.27R — the honest truth that Breakout, as written, loses money.
 
 **No strategy in [docs/06-STRATEGIES.md](docs/06-STRATEGIES.md) has been implemented or validated. Every
 expectancy figure there is a hypothesis, not a result.** Do not describe this

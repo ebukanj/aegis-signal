@@ -1,23 +1,19 @@
-import {
-  getMockAICommentary,
-  getMockSignalDetail,
-} from "@/features/signals/data/mock-signal-details";
-import { getMockTodaysSignals } from "@/features/signals/data/mock-today";
-import type { TodaysSignals } from "@/features/signals/data/mock-today";
-import type {
-  AICommentary,
-  SignalDetailResponse,
-} from "@/features/signals/types";
+import { apiGet, ApiError } from "@/lib/api";
+import type { SignalDetailResponse, SignalFeed } from "@aegis/contracts";
+import type { AICommentary } from "@/features/signals/types";
 
 /**
- * Signal Intelligence data access. Simulates the REST API with mock data
- * + latency; each function becomes a fetch when the backend ships.
- * AI commentary is a separate, slower endpoint by design — the AI layer is a
- * distinct service (SOLUTION_ARCHITECTURE §10) and the page must not wait on it.
+ * Signal Intelligence data access — LIVE.
+ *
+ * These call the Signal Engine's read API (M10). The feed and the detail are the
+ * platform's real published signals; nothing here is mock.
+ *
+ * AI commentary remains unwired — the AI layer is a distinct, later service
+ * (SOLUTION_ARCHITECTURE §10). It throws `NotYetLive` rather than returning
+ * invented prose, and the page is built to render a signal fully without it.
  */
 
-const simulate = <T>(data: T, delayMs: number): Promise<T> =>
-  new Promise((resolve) => setTimeout(() => resolve(data), delayMs));
+export type TodaysSignals = SignalFeed;
 
 export class SignalNotFoundError extends Error {
   constructor(id: string) {
@@ -26,23 +22,35 @@ export class SignalNotFoundError extends Error {
   }
 }
 
+export class NotYetLive extends Error {
+  constructor(what: string) {
+    super(`${what} is not live yet`);
+    this.name = "NotYetLive";
+  }
+}
+
 export const signalsApi = {
   /** The home page's only question: what should I trade today? */
   getTodaysSignals: (): Promise<TodaysSignals> =>
-    simulate(getMockTodaysSignals(), 500),
+    apiGet<TodaysSignals>("/signals/today"),
 
   getSignalDetail: async (id: string): Promise<SignalDetailResponse> => {
-    const response = getMockSignalDetail(id);
-    if (!response) {
-      await simulate(null, 350);
-      throw new SignalNotFoundError(id);
+    try {
+      return await apiGet<SignalDetailResponse>(`/signals/${encodeURIComponent(id)}`);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        throw new SignalNotFoundError(id);
+      }
+      throw error;
     }
-    return simulate(response, 550);
   },
 
-  getAICommentary: async (id: string): Promise<AICommentary> => {
-    const commentary = getMockAICommentary(id);
-    if (!commentary) throw new SignalNotFoundError(id);
-    return simulate(commentary, 1400);
+  /**
+   * The AI commentary layer does not exist yet. It is a separate service, and
+   * rather than fabricate market prose (the exact thing this platform refuses), it
+   * declares itself unavailable. The report renders without it.
+   */
+  getAICommentary: (_id: string): Promise<AICommentary> => {
+    throw new NotYetLive("AI commentary");
   },
 };

@@ -128,3 +128,201 @@ model CalibrationModel {
 
   @@index([active])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Milestone 10 — the Signal Engine. The publisher.
+//
+// A Signal is the single output of the platform (AGENTS.md §1) and it is
+// APPEND-ONLY. No signal is ever deleted (06-STRATEGIES §5): its lifecycle
+// advances, but the trade it described is a matter of record the instant it is
+// published, because a track record you can revise is not a track record.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// A published signal — risk-validated, confidence-calibrated, selected.
+///
+/// The `id` is DETERMINISTIC (a hash of symbol + direction + timeframe + bar +
+/// the strategies that fired), not a random UUID. That is what makes the pipeline
+/// idempotent — re-running a bar cannot publish the same opportunity twice — and
+/// it is what makes deduplication and deterministic replay possible at all.
+model Signal {
+  id String @id
+
+  symbol    String
+  exchange  String
+  timeframe String
+  direction String
+  regime    String
+
+  /// Every strategy that agreed, primary first. Length > 1 is confluence.
+  strategies  String[]
+  /// The exact rules each strategy fired on — a settled trade traces to these.
+  rulesHashes String[]
+
+  marketType       String
+  suggestedLeverage Int?
+  entryPrice       Float
+  stopLoss         Float
+  takeProfits      Float[]
+
+  /// The three separate measures, each stored whole with its own provenance.
+  confidence Json
+  confluence Json
+  signalScore Json
+
+  isPrime Boolean @default(false)
+
+  /// ACTIVE | TRIGGERED | COMPLETED | STOPPED | EXPIRED. Advances, never resets.
+  status String
+
+  barTime     BigInt
+  publishedAt BigInt
+  expiresAt   BigInt
+
+  summary       String
+  whyPublished  String
+  supporting    String[]
+  contradicting String[]
+  unassessed    String[]
+
+  /// Which calibration model produced the confidence. Stored forever, so the
+  /// number this signal claimed can always be graded against the model that made
+  /// it — even after the model is superseded.
+  calibrationVersion Int
+
+  createdAt DateTime @default(now())
+
+  transitions SignalTransition[]
+
+  @@index([status])
+  @@index([symbol, direction, timeframe, barTime])
+  @@index([isPrime])
+  @@index([publishedAt])
+}
+
+/// Every lifecycle transition, appended. The audit trail — a signal's whole life
+/// is reconstructable from these, in order, and none is ever overwritten.
+model SignalTransition {
+  id       String @id @default(cuid())
+  signalId String
+  signal   Signal @relation(fields: [signalId], references: [id])
+
+  from String
+  to   String
+  /// Why it moved — "price reached TP1 at 62,400", "expired after 72 bars".
+  reason String
+
+  at        BigInt
+  createdAt DateTime @default(now())
+
+  @@index([signalId])
+}
+
+/// The day's Prime budget, as an auditable ledger row per awarded slot.
+///
+/// Prime is scarce on purpose (ADR-021 §2). A ledger rather than a counter so
+/// that "why was this not Prime?" always has an answer: the slots were spent,
+/// here is on what, in rank order. The unique key stops the same signal taking
+/// two slots and stops a slot number being reused within a day.
+model PrimeAllocation {
+  id       String @id @default(cuid())
+  day      String
+  slot     Int
+  signalId String
+  symbol   String
+  score    Float
+
+  awardedAt BigInt
+  createdAt DateTime @default(now())
+
+  @@unique([day, slot])
+  @@unique([day, signalId])
+  @@index([day])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Milestone 11 — the Outcome Ledger. The permanent memory.
+//
+// Signals are temporary; history is permanent. The ledger NEVER edits history:
+// a settled outcome is a matter of record, corrections are appended as new audit
+// events, and nothing is ever overwritten. This is the single source of truth the
+// Confidence Engine calibrates against — if it can be revised, every number
+// downstream becomes a rumour (06-STRATEGIES §5).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// One published signal, recorded from birth to settlement — the immutable atom
+/// of the platform's history.
+///
+/// It carries EVERYTHING (the confidence, confluence, risk, evidence, all frozen
+/// as they were at publication) so that no downstream engine ever needs to
+/// recreate the past. A recreation could differ from what happened; the past is
+/// stored, not recomputed.
+///
+/// `settlement` is null while open and set exactly ONCE, forever, on close. The
+/// one-way transition is enforced in the repository, not by a trigger, so the
+/// enforcement is testable.
+model LedgerEntry {
+  signalId String @id
+
+  strategyId      String
+  strategyVersion Int
+  rulesHash       String
+
+  symbol    String
+  exchange  String
+  market    String
+  timeframe String
+  direction String
+  regime    String
+
+  entryPrice  Float
+  stopLoss    Float
+  takeProfits Float[]
+
+  /// The three measures, frozen. The evidence that justified the trade.
+  confidence  Json
+  confluence  Json
+  signalScore Json
+  calibrationVersion Int
+
+  publishedAt BigInt
+  barTime     BigInt
+
+  /// Null while open. The settlement arithmetic (outcome, R, PnL, MFE, MAE,
+  /// duration, exit reason), set once and never touched again.
+  settlement Json?
+  /// Denormalised for fast filtering/sorting without parsing the JSON. Kept in
+  /// lockstep with `settlement` in the same write.
+  outcome   String?
+  realisedR Float?
+  settledAt BigInt?
+
+  createdAt DateTime @default(now())
+
+  audits LedgerAudit[]
+
+  @@index([strategyId, rulesHash])
+  @@index([outcome])
+  @@index([settledAt])
+  @@index([symbol])
+  @@index([regime])
+  @@index([publishedAt])
+}
+
+/// Every mutation of the ledger, appended. The audit trail — a record's whole
+/// life is reconstructable from these, in order, and none is ever overwritten.
+/// A correction is a NEW row, never an edit to an old one.
+model LedgerAudit {
+  id       String      @id @default(cuid())
+  signalId String
+  entry    LedgerEntry @relation(fields: [signalId], references: [signalId])
+
+  /// CREATED | TRIGGERED | SETTLED | ARCHIVED | CORRECTION | REPLAY.
+  action String
+  detail String
+
+  at        BigInt
+  createdAt DateTime @default(now())
+
+  @@index([signalId])
+  @@index([action])
+}

@@ -1,6 +1,6 @@
 import { ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import type { ScanContext } from "@/features/signals/data/mock-today";
+import type { ScanContext } from "@aegis/contracts";
 
 /**
  * The most important empty state in the platform.

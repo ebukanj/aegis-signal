@@ -18,7 +18,6 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { REGIME_META, RISK_META } from "@/constants/domain";
 import { formatPrice, formatSignalTime } from "@/lib/format";
 import { buildTradeInstruction } from "@/lib/trade-instruction";
-import { buildCalibration } from "@/features/signals/data/mock-confidence";
 import { useSignalDetail } from "@/features/signals/hooks/use-signal-detail";
 import { ConfidenceBreakdownPanel } from "@/features/signals/components/confidence-breakdown-panel";
 import { CopySignalButton } from "@/features/signals/components/copy-signal-button";
@@ -59,9 +58,19 @@ function PanelBody({ signal }: { signal: Opportunity }) {
   const market = REGIME_META[signal.regime];
   const detail = data?.detail;
 
-  // Shaped exactly as the Confidence Engine will emit it (ADR-024). The
-  // frontend renders this; it must never compute a score.
-  const calibration = buildCalibration(signal);
+  // The REAL calibration from the Confidence Engine, carried on the signal detail
+  // (ADR-024). Until the detail loads, a score-only placeholder — never a computed
+  // one; the frontend must never invent a probability.
+  const calibration = detail?.calibration ?? {
+    score: signal.confidence,
+    contributors: [],
+    basis: "UNCALIBRATED" as const,
+    historicalWinRate: null,
+    historicalSamples: 0,
+    liveWinRate: null,
+    liveSamples: 0,
+    displayedWinRate: null,
+  };
 
   return (
     <>

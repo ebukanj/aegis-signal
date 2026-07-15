@@ -2,7 +2,7 @@ import { z } from "zod";
 import { marketRegimeSchema, timeframeSchema } from "../domain";
 import { exchangeIdSchema, notificationChannelSchema } from "../enums/platform";
 import { rejectionGateSchema } from "../enums/lifecycle";
-import { signalOutcomeSchema } from "../domain";
+import { signalOutcomeSchema, signalStatusSchema } from "../domain";
 import {
   confidenceSchema,
   pairSchema,
@@ -52,6 +52,14 @@ export const EVENT = {
 
   SIGNAL_CREATED: "signal.created",
   PRIME_SELECTED: "signal.prime-selected",
+
+  /* ── The Signal Engine's publication verdicts (M10) ────────────── */
+  SIGNAL_PUBLISHED: "signal.published",
+  /** A complete, approved candidate that was NOT published, and why. */
+  SIGNAL_SUPPRESSED: "signal.suppressed",
+  /** A published signal advanced through its lifecycle. */
+  SIGNAL_LIFECYCLE_CHANGED: "signal.lifecycle-changed",
+
   NOTIFICATION_QUEUED: "notification.queued",
   SIGNAL_SETTLED: "signal.settled",
   OUTCOME_RECORDED: "ledger.outcome-recorded",
@@ -195,6 +203,53 @@ export const notificationQueuedSchema = z.object({
 });
 export type NotificationQueued = z.infer<typeof notificationQueuedSchema>;
 
+/* ── Publication (M10) ─────────────────────────────────────────────── */
+
+/**
+ * A signal was published to the internal event stream — the platform's single
+ * output (AGENTS.md §1). `signalId` is DETERMINISTIC (not a UUID): the same bar
+ * always produces the same id, which is what makes replay reproducible and
+ * deduplication possible.
+ */
+export const signalPublishedSchema = z.object({
+  ...eventBase,
+  name: z.literal(EVENT.SIGNAL_PUBLISHED),
+  signalId: z.string(),
+  pair: pairSchema,
+  strategies: z.array(z.string()).min(1),
+  isPrime: z.boolean(),
+  signalScore: z.number().min(0).max(100),
+  confidence: confidenceSchema,
+});
+export type SignalPublished = z.infer<typeof signalPublishedSchema>;
+
+/**
+ * A complete, risk-approved, confidence-scored candidate that was NOT published.
+ *
+ * This is the event that makes a quiet day auditable. Silence is a feature, but a
+ * silence that cannot say why is indistinguishable from a broken pipeline — so
+ * every suppression names the gate it died at and what it measured.
+ */
+export const signalSuppressedSchema = z.object({
+  ...eventBase,
+  name: z.literal(EVENT.SIGNAL_SUPPRESSED),
+  pair: pairSchema,
+  strategies: z.array(z.string()).min(1),
+  gate: rejectionGateSchema,
+  reason: z.string().min(1),
+});
+export type SignalSuppressed = z.infer<typeof signalSuppressedSchema>;
+
+/** A published signal moved through its lifecycle. Every transition is recorded. */
+export const signalLifecycleChangedSchema = z.object({
+  ...eventBase,
+  name: z.literal(EVENT.SIGNAL_LIFECYCLE_CHANGED),
+  signalId: z.string(),
+  from: signalStatusSchema,
+  to: signalStatusSchema,
+});
+export type SignalLifecycleChanged = z.infer<typeof signalLifecycleChangedSchema>;
+
 /* ── The ledger — where trust is earned ────────────────────────────── */
 
 export const signalSettledSchema = z.object({
@@ -277,6 +332,9 @@ export const platformEventSchema = z.discriminatedUnion("name", [
   riskRejectedSchema,
   signalCreatedSchema,
   primeSelectedSchema,
+  signalPublishedSchema,
+  signalSuppressedSchema,
+  signalLifecycleChangedSchema,
   notificationQueuedSchema,
   signalSettledSchema,
   outcomeRecordedSchema,

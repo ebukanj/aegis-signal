@@ -52,6 +52,8 @@ export * from "./risk/risk";
 /* ── Confidence — earned, never asserted (ADR-024) ─────────────────── */
 export * from "./confidence";
 export * from "./calibration";
+export * from "./signal-engine";
+export * from "./ledger";
 
 /* ── Signals — the platform's single output ────────────────────────── */
 export * from "./signal";

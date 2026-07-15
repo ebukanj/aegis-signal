@@ -17,6 +17,8 @@ import { RegimeModule } from "./modules/regime/regime.module";
 import { StrategyModule } from "./modules/strategy/strategy.module";
 import { RiskModule } from "./modules/risk/risk.module";
 import { ConfidenceModule } from "./modules/confidence/confidence.module";
+import { SignalModule } from "./modules/signals/signal.module";
+import { LedgerModule } from "./modules/ledger/ledger.module";
 
 /**
  * The application.
@@ -109,6 +111,8 @@ import { ConfidenceModule } from "./modules/confidence/confidence.module";
      */
     RiskModule,
     ConfidenceModule,
+    SignalModule,
+    LedgerModule,
 
     /*
      * Still to come, in pipeline order:

@@ -5,8 +5,8 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReliabilityChart } from "@/features/track-record/components/reliability-chart";
-import { getMockTrackRecord } from "@/features/track-record/data/mock-record";
-import type { StrategyRecordRow } from "@/features/track-record/data/mock-record";
+import { trackRecordApi } from "@/features/track-record/api/track-record-api";
+import type { StrategyRecordRow } from "@aegis/contracts";
 import { cn } from "@/lib/utils";
 
 /**
@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 export function TrackRecordPage() {
   const { data, isPending } = useQuery({
     queryKey: ["track-record"],
-    queryFn: async () => getMockTrackRecord(),
+    queryFn: () => trackRecordApi.get(),
   });
 
   if (isPending || !data) {

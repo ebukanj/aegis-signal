@@ -39,12 +39,12 @@ endpoint ships, the mock is **deleted, not adapted**. Adapting it — keeping it
 |---|---|---|---|
 | `features/scanner/data/mock-opportunities.ts` | Signals list, Scanner results | `GET /api/v1/signals` · `POST /api/v1/scan` | M06 — Signal Engine |
 | `features/scanner/data/mock-scan.ts` | Scanner run + rejections | `POST /api/v1/scan` | M05 — Risk Engine *(rejections come from it)* |
-| `features/signals/data/mock-signal-details.ts` | Signal detail panel + report | `GET /api/v1/signals/:id` | M06 — Signal Engine |
-| `features/signals/data/mock-today.ts` | Today's Prime feed | `GET /api/v1/signals/today` | M06 — Signal Engine |
-| `features/signals/data/mock-confidence.ts` | Confidence breakdown | `GET /api/v1/signals/:id` *(embedded)* | M07 — Confidence Engine |
+| ~~`features/signals/data/mock-signal-details.ts`~~ | ~~Signal detail~~ | **RETIRED (M10).** `GET /api/v1/signals/:id` is live. |
+| ~~`features/signals/data/mock-today.ts`~~ | ~~Today's feed~~ | **RETIRED (M10).** `GET /api/v1/signals/today` is live, and the feed subscribes to the `signals` socket for live updates. |
+| ~~`features/signals/data/mock-confidence.ts`~~ | ~~Confidence breakdown~~ | **RETIRED (M10).** Real `CalibratedConfidence` rides on the signal detail. |
 | ~~`features/signals/hooks/use-live-price.ts`~~ | ~~Live price~~ | **RETIRED in M03.** The seeded random walk is deleted. Price now streams from Binance over the `market` Socket.IO namespace (`price` event) via `lib/market-socket.ts`. **Entry status still computed in the hook — it belongs to the Risk Engine and moves there in M05.** | ✅ M03 |
 | `features/insights/data/mock-insights.ts` | News, social, fundamentals, Risk Flags | `GET /api/v1/insights` | M09 — Insights |
-| `features/track-record/data/mock-record.ts` | Track Record + reliability curve | `GET /api/v1/track-record` | M08 — Calibration |
+| ~~`features/track-record/data/mock-record.ts`~~ | ~~Track Record + reliability curve~~ | **RETIRED (M11).** `GET /api/v1/track-record` serves the Outcome Ledger's real settled trades + the calibration curve. |
 | `features/notifications/data/mock-notifications.ts` | Notification centre | `GET /api/v1/notifications` | M10 — Notifications |
 | `features/settings/data/mock-settings.ts` | Settings | `GET /api/v1/settings` | M11 — Users |
 | `features/admin/data/mock-admin.ts` | Admin console | `GET /api/v1/admin/*` | M11 — Users |

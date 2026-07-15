@@ -62,3 +62,32 @@ export const opportunitySchema = z
 export type Opportunity = z.infer<typeof opportunitySchema>;
 
 export const opportunityListSchema = z.array(opportunitySchema);
+
+/* ── The signals feed (Signal Engine read API, M10) ────────────────── */
+
+/** The market backdrop the feed was produced against. */
+export const scanContextSchema = z.object({
+  regime: marketRegimeSchema,
+  riskLevel: riskLevelSchema,
+  pairsScanned: z.number().int().nonnegative(),
+  exchanges: z.number().int().nonnegative(),
+  strategiesActive: z.number().int().nonnegative(),
+  lastScanAt: timestampSchema,
+  /** How many signals the platform has published in the feed window. */
+  published: z.number().int().nonnegative(),
+});
+export type ScanContext = z.infer<typeof scanContextSchema>;
+
+/**
+ * Today's signals — the platform's single output, in two tiers (ADR-021).
+ *
+ * PRIME is the few the platform will interrupt a trader for; VALIDATED is
+ * everything else that published but did not earn a slot. An empty PRIME tier is
+ * the honest state until a strategy is proven, not a bug — silence is a feature.
+ */
+export const signalFeedSchema = z.object({
+  context: scanContextSchema,
+  prime: opportunityListSchema,
+  validated: opportunityListSchema,
+});
+export type SignalFeed = z.infer<typeof signalFeedSchema>;
