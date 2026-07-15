@@ -55,7 +55,7 @@ Kept in sync with the in-session todo list. Notes/instructions inline where they
 
 - [x] Verify end-to-end in the browser (live updates + real track record).
 - [x] Full test suite green (contracts + API + web typecheck).
-- [ ] Commit M11, then **STOP for approval** before M12 (Insights Engine).
+- [x] Commit M11 (99d4008), then **STOP for approval** before M12 (Insights Engine).
 
 ---
 
