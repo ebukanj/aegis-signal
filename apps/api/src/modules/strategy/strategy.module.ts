@@ -44,6 +44,6 @@ import { StrategyService } from "./application/services/strategy.service";
     StrategyEvaluator,
     StrategyService,
   ],
-  exports: [StrategyService, StrategyRepository, StrategyEvaluator],
+  exports: [StrategyService, StrategyRepository, StrategyEvaluator, DependencyResolver],
 })
 export class StrategyModule {}

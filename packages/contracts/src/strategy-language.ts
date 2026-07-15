@@ -248,6 +248,9 @@ export function describeOperand(operand: Operand): string {
   if (operand.period !== undefined) text += ` (${operand.period})`;
   if (operand.multiplier !== undefined) text = `${operand.multiplier}× ${text}`;
   if (operand.timeframe !== undefined) text += ` on the ${operand.timeframe}`;
+  if (operand.shift !== undefined && operand.shift > 0) {
+    text += operand.shift === 1 ? " (prior bar)" : ` (${operand.shift} bars ago)`;
+  }
   return text;
 }
 

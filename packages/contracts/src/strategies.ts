@@ -39,6 +39,7 @@ const ind = (
     period?: number;
     timeframe?: Timeframe;
     multiplier?: number;
+    shift?: number;
   } = {},
 ): Operand => ({ kind: "indicator", indicator, ...opts });
 
@@ -123,7 +124,10 @@ const SEEDS: Omit<StrategyDefinition, "version" | "rulesHash">[] = [
     market: "PERPETUAL",
     timeframe: "1h",
     entry: [
-      when(ind("close"), "gt", ind("highest_high", { period: 20 })),
+      // Break above the PRIOR 20-bar high (shift: 1) — a Donchian breakout. Without
+      // the shift this compares the close against a window that includes the bar's
+      // own high, which is never exceeded, and the strategy could never fire.
+      when(ind("close"), "gt", ind("highest_high", { period: 20, shift: 1 })),
       when(
         ind("volume"),
         "gte",
@@ -247,8 +251,11 @@ const SEEDS: Omit<StrategyDefinition, "version" | "rulesHash">[] = [
     ],
     stop: { kind: "atr", period: 14, multiplier: 1.0 },
     targets: [
-      { rMultiple: 1.2, closePercent: 60 },
-      { rMultiple: 2.0, closePercent: 40 },
+      // First target raised 1.2 → 1.5R: the Risk Engine refuses anything below its
+      // 1.5R floor, so at 1.2 every candidate this strategy produced was vetoed
+      // before it could reach a trader.
+      { rMultiple: 1.5, closePercent: 60 },
+      { rMultiple: 2.5, closePercent: 40 },
     ],
     riskPercent: 0.75,
     maxLeverage: 2,
@@ -307,8 +314,11 @@ const SEEDS: Omit<StrategyDefinition, "version" | "rulesHash">[] = [
     ],
     stop: { kind: "atr", period: 14, multiplier: 0.5 },
     targets: [
-      { rMultiple: 1.0, closePercent: 50 },
-      { rMultiple: 2.0, closePercent: 50 },
+      // First target raised 1.0 → 1.5R to clear the Risk Engine's 1.5R floor —
+      // at 1.0R every Level Bounce candidate was vetoed on RISK_REWARD and never
+      // reached a trader. A tight 0.5-ATR stop makes 1.5R a modest, reachable move.
+      { rMultiple: 1.5, closePercent: 50 },
+      { rMultiple: 3.0, closePercent: 50 },
     ],
     riskPercent: 0.5,
     maxLeverage: 5,
@@ -348,7 +358,9 @@ const SEEDS: Omit<StrategyDefinition, "version" | "rulesHash">[] = [
         pattern("BULL_FLAG", 0.75),
         pattern("ASCENDING_TRIANGLE", 0.75),
       ),
-      when(ind("close"), "gt", ind("highest_high", { period: 10 })),
+      // The PRIOR 10-bar high (shift: 1). See Breakout — an unshifted highest_high
+      // includes the current bar and can never be exceeded by that bar's close.
+      when(ind("close"), "gt", ind("highest_high", { period: 10, shift: 1 })),
       when(
         ind("volume"),
         "gte",

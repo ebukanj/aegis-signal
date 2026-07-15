@@ -38,10 +38,22 @@ import { ALL_VALIDATORS } from "../validators";
 export class RiskPipeline {
   constructor(private readonly sizing: SizingService) {}
 
-  decide(context: RiskContext): RiskDecision {
+  /**
+   * @param validators Defaults to every gate, and in production it is ALWAYS every
+   *   gate — nothing in the live path may pass a subset. The parameter exists for
+   *   the confidence engine's historical replay, which physically cannot answer the
+   *   microstructure gates: **Binance does not sell you the order book of March
+   *   2024.** See `HISTORICALLY_REPLAYABLE` for which gates survive that limitation
+   *   and, more importantly, for the honest statement of what the corpus therefore
+   *   is not.
+   */
+  decide(
+    context: RiskContext,
+    validators: readonly IRiskValidator[] = ALL_VALIDATORS,
+  ): RiskDecision {
     const verdicts = new Map<IRiskValidator, Verdict>();
 
-    for (const validator of ALL_VALIDATORS) {
+    for (const validator of validators) {
       verdicts.set(validator, validator.validate(context));
     }
 

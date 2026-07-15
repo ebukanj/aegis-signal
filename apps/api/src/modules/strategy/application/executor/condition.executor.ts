@@ -254,12 +254,35 @@ export class ConditionExecutor {
      * Applied here rather than baked into the indicator's identity, so the underlying
      * series is computed and cached ONCE however many rules scale it differently.
      */
+    let resolved: readonly Maybe[] = series;
+
     if (operand.multiplier !== undefined) {
       const factor = operand.multiplier;
-      return series.map((v) => (v === null ? null : v * factor));
+      resolved = resolved.map((v) => (v === null ? null : v * factor));
     }
 
-    return series;
+    /*
+     * SHIFT reads the value from N bars back — "the highest high of the 20 bars
+     * ending ONE bar ago", which is what a breakout compares against.
+     *
+     * Without it, `close > highest_high(20)` compares the bar's close against a
+     * window that includes the bar's own high, and since a high is never below its
+     * close the condition is tautologically false and the strategy never fires.
+     * The shift is stated on the operand (see the `shift` field in the contract)
+     * rather than hidden here, because `highest_high` used for a STOP genuinely
+     * wants the inclusive extreme — the lag belongs to the comparison, not the
+     * indicator.
+     *
+     * `shifted[i] = series[i - shift]`; the first `shift` entries have no
+     * predecessor and are null, exactly as a warmup gap is.
+     */
+    if (operand.shift !== undefined && operand.shift > 0) {
+      const by = operand.shift;
+      const source = resolved;
+      resolved = source.map((_, i) => (i - by >= 0 ? source[i - by] : null));
+    }
+
+    return resolved;
   }
 
   /* ── Evidence ────────────────────────────────────────────────────── */

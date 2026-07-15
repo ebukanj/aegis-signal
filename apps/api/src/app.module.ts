@@ -16,6 +16,7 @@ import { PatternModule } from "./modules/patterns/pattern.module";
 import { RegimeModule } from "./modules/regime/regime.module";
 import { StrategyModule } from "./modules/strategy/strategy.module";
 import { RiskModule } from "./modules/risk/risk.module";
+import { ConfidenceModule } from "./modules/confidence/confidence.module";
 
 /**
  * The application.
@@ -107,6 +108,7 @@ import { RiskModule } from "./modules/risk/risk.module";
      * it IS the product.
      */
     RiskModule,
+    ConfidenceModule,
 
     /*
      * Still to come, in pipeline order:

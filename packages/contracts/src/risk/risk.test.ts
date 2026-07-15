@@ -93,6 +93,13 @@ describe("risk decision", () => {
       openPositions: 2,
     },
     warnings: [],
+    /*
+     * Required, and required for a reason: a risk assessment must always be able
+     * to say what it could NOT check. An empty array is the claim "everything was
+     * measured" — which is only true once every feed exists. Omitting the field
+     * would let a report be silent about its own blind spots.
+     */
+    unassessed: [],
   };
 
   it("accepts an approval carrying its assessment", () => {

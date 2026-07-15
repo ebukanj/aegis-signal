@@ -46,6 +46,6 @@ import { PatternCache } from "./application/cache/pattern.cache";
     PatternCache,
     PatternService,
   ],
-  exports: [PatternService, PatternRegistry, SwingEngine, StructureEngine],
+  exports: [PatternService, PatternRegistry, SwingEngine, StructureEngine, ZoneEngine],
 })
 export class PatternModule {}

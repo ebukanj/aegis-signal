@@ -30,6 +30,6 @@ import { SizingService } from "./application/services/sizing.service";
  */
 @Module({
   providers: [SizingService, RiskPipeline, RiskService],
-  exports: [RiskService],
+  exports: [RiskService, RiskPipeline],
 })
 export class RiskModule {}

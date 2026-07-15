@@ -24,6 +24,7 @@ import { MarketNormalizer } from "../infrastructure/normalizers/market.normalize
 import { MarketCache } from "../infrastructure/cache/market.cache";
 import { createExchangeLookup } from "../infrastructure/exchange-dns";
 import { BinanceAdapter } from "../infrastructure/adapters/binance.adapter";
+import { timeframeMs } from "../../indicators/application/services/timeframe.resolver";
 import { CcxtRestAdapter } from "../infrastructure/adapters/ccxt-rest.adapter";
 import { AppConfigService } from "../../../config/app-config.service";
 
@@ -351,6 +352,87 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
     const closed = lastIsForming ? candles.slice(0, -1) : candles;
 
     return closed.slice(-requested);
+  }
+
+  /**
+   * Deep history, paged.
+   *
+   * An exchange returns at most ~1,500 candles per request, and the confidence
+   * engine's replay needs two YEARS of hourly bars — about 17,500. So it pages
+   * backwards from the present, one request at a time.
+   *
+   * ── The two things that make this correct rather than merely working ──
+   *
+   * **It stops when the exchange stops.** A page that returns nothing new means we
+   * have reached the start of the pair's listed history, and the loop ends. It does
+   * not retry, and it does not pad — a corpus quietly shortened by a delisting is a
+   * corpus that says so, by being short.
+   *
+   * **It deduplicates and re-sorts.** Pages overlap at their boundaries and some
+   * exchanges are careless about the edges. A duplicated candle in a replay is a
+   * duplicated SETUP, and a duplicated setup is a free sample — the cheapest way in
+   * the world to halve your uncertainty without learning anything.
+   */
+  async history(input: {
+    exchange?: ExchangeId;
+    symbol: string;
+    timeframe: Timeframe;
+    bars: number;
+  }): Promise<Candle[]> {
+    const adapter = this.adapterFor(input.exchange);
+
+    const PAGE = 1000;
+    const span = timeframeMs(input.timeframe);
+
+    const byTime = new Map<number, Candle>();
+
+    /* Page backwards from now, until we have enough or the exchange runs out. */
+    let until = Date.now();
+
+    while (byTime.size < input.bars) {
+      const since = until - PAGE * span;
+
+      const { candles } = await adapter.fetchCandles({
+        symbol: input.symbol,
+        timeframe: input.timeframe,
+        limit: PAGE,
+        since,
+      });
+
+      const fresh = candles.filter((c) => !byTime.has(c.time));
+
+      if (fresh.length === 0) {
+        /* Streaming min — `Math.min(...keys)` would spread tens of thousands of
+         * timestamps onto the stack and can overflow it. */
+        let earliest = Number.POSITIVE_INFINITY;
+        for (const time of byTime.keys()) if (time < earliest) earliest = time;
+
+        this.logger.warn(
+          `${input.symbol} ${input.timeframe}: history ends at ${new Date(earliest)
+            .toISOString()
+            .slice(0, 10)} — the pair does not go back far enough for ${input.bars} bars, and the corpus will be correspondingly shorter rather than padded`,
+        );
+        break;
+      }
+
+      for (const candle of candles) byTime.set(candle.time, candle);
+
+      until = since;
+    }
+
+    const sorted = [...byTime.values()].sort((a, b) => a.time - b.time);
+
+    /*
+     * Drop the newest bar if it is still forming. A strategy evaluated on an
+     * unclosed candle is committing look-ahead bias, and in a replay that error
+     * would be silently baked into every statistic downstream.
+     */
+    const complete =
+      sorted.length > 0 && sorted[sorted.length - 1].time + span > Date.now()
+        ? sorted.slice(0, -1)
+        : sorted;
+
+    return complete.slice(-input.bars);
   }
 
   async ticker(symbol: string, exchange?: ExchangeId): Promise<Ticker> {

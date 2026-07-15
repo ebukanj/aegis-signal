@@ -76,3 +76,69 @@ export const ALL_VALIDATORS: IRiskValidator[] = [
   portfolioHeatValidator,
   derivativesValidator,
 ];
+
+/* ── The gates history can actually answer ─────────────────────────── */
+
+/**
+ * The subset of gates the confidence engine's historical replay may run.
+ *
+ * ── Why a subset exists at all, stated bluntly ──
+ *
+ * **Binance does not sell you the order book of March 2024.** Spread, depth,
+ * exchange latency and funding are not recoverable from historical candles — they
+ * were never stored, by anyone, and no amount of engineering will conjure them.
+ *
+ * So a replay cannot run the microstructure gates. It has two options, and only
+ * one of them is honest:
+ *
+ *   1. Synthesise a plausible spread and depth, and let the gates run. This
+ *      produces a complete-looking corpus built partly on fabricated inputs, and
+ *      every number downstream inherits the fabrication while looking exactly like
+ *      a measurement. **Refused.**
+ *   2. Run only the gates whose inputs actually exist, and say plainly what the
+ *      corpus therefore is not.
+ *
+ * We take the second.
+ *
+ * ── What that means, and it is not nothing ──
+ *
+ * The historical corpus is a corpus of setups that passed the CANDLE-COMPUTABLE
+ * gates. It contains setups that a live spread or liquidity gate would have
+ * vetoed, because in March 2024 nobody recorded whether it would have. Live
+ * signals are therefore gated MORE strictly than the corpus was.
+ *
+ * That is a real limitation and it is written into docs/13-CONFIDENCE.md rather
+ * than buried here. The direction of the bias is at least the safe one: the corpus
+ * includes marginal setups that live trading would have refused, so if anything it
+ * understates what the surviving live signals are worth. It does not overstate it.
+ *
+ * The correct fix is to record the book going forward, so that in two years the
+ * corpus is complete. That is the only fix, and it takes two years.
+ */
+export const HISTORICALLY_REPLAYABLE: readonly IRiskValidator[] = [
+  candidateIntegrityValidator,
+  volatilityValidator,
+  regimeValidator,
+  riskRewardValidator,
+  stopQualityValidator,
+  structureValidator,
+];
+
+/**
+ * The gates that need a live market, and can never be replayed.
+ *
+ * Every validator must appear in exactly one of these two lists. A test enforces
+ * it — so a gate added later cannot be silently skipped by the replay, which would
+ * shift the corpus's score distribution away from the live one and quietly
+ * invalidate every calibrated probability the platform prints.
+ */
+export const REQUIRES_LIVE_MARKET: readonly IRiskValidator[] = [
+  exchangeHealthValidator,
+  freshnessValidator,
+  liquidityValidator,
+  spreadValidator,
+  correlationValidator,
+  newsValidator,
+  portfolioHeatValidator,
+  derivativesValidator,
+];

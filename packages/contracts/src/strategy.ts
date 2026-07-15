@@ -303,6 +303,28 @@ export const operandSchema = z.discriminatedUnion("kind", [
     timeframe: timeframeSchema.optional(),
     /** Scales the result, e.g. volume_sma(20) × 1.5. */
     multiplier: z.number().positive().optional(),
+    /**
+     * Read the value from N bars BACK, not the current bar.
+     *
+     * ── Why this exists, and the tautology it kills ──
+     *
+     * A breakout is written `close > highest_high(20)`. But `highest_high(20)` at
+     * bar i is the max high over the window ENDING AT i — which includes bar i's
+     * own high. Since a candle's high is always ≥ its close, `close > highest_high`
+     * is `close > max(…, thisBarsHigh)`, and that is **never true**. The condition
+     * is tautologically false, the strategy never fires, and nothing explains why.
+     *
+     * The standard Donchian breakout compares the close against the extreme of the
+     * bars BEFORE it: `close > highest_high(20) shifted by 1` = the highest high of
+     * the 20 bars ending one bar ago. `shift: 1` makes that intent explicit in the
+     * document rather than hiding it in the evaluator.
+     *
+     * It is deliberately NOT the default. `highest_high` used for a stop (the trade
+     * planner) genuinely wants the inclusive extreme, and a silent lag there would
+     * move every stop by a bar. The shift belongs to the comparison, so it is
+     * stated at the comparison.
+     */
+    shift: z.number().int().nonnegative().optional(),
   }),
 ]);
 export type Operand = z.infer<typeof operandSchema>;

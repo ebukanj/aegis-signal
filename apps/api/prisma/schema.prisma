@@ -25,3 +25,106 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Milestone 09 — the evidence behind the confidence score.
+//
+// Two tables, and the distinction between them is the whole of ADR-024:
+//
+//   HistoricalSetup is what the MARKET did. Replayed from exchange candles,
+//   labelled by walking each setup forward bar by bar. Real, and optimistic —
+//   the rules were written by people who had already seen this history.
+//
+//   SignalOutcome (the LIVE ledger) is what WE did. It does not exist yet, and
+//   it cannot: no signal has ever been published. It arrives with the Signal
+//   Engine (M10) and settles thereafter. Until then live samples are ZERO, and
+//   the platform says so rather than passing the replay off as a track record.
+//
+// The confidence engine reads the first, is built to read the second, and is
+// forbidden from ever merging them behind a single unlabelled percentage.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// One historical setup, replayed and labelled. The atom of earned confidence.
+///
+/// Append-only, like everything that constitutes evidence. A replay that runs
+/// twice must not count the same setup twice — hence the unique key on the
+/// setup's identity rather than a surrogate id. Double-counted evidence is the
+/// cheapest possible way to manufacture a sample size.
+model HistoricalSetup {
+  id String @id @default(cuid())
+
+  /// WHICH RULES produced this. When a strategy is edited its hash changes and
+  /// these rows stop matching it — ADR-024's "editing a strategy wipes its track
+  /// record", enforced by arithmetic rather than by a DELETE.
+  strategyId String
+  rulesHash  String
+
+  symbol    String
+  exchange  String
+  timeframe String
+  direction String
+
+  regime           String
+  volatilityState  String
+  volatilityBucket String
+  liquidityBucket  String
+  riskLevel        String
+  patterns         String[]
+
+  /// The raw contributor score. Its BUCKET is what gets calibrated.
+  score Int
+
+  barTime     BigInt
+  entryPrice  Float
+  stopPrice   Float
+  targetPrice Float
+
+  /// WIN | LOSS | EXPIRED. Expired is a non-win, never a discarded row.
+  outcome   String
+  realisedR Float
+  barsHeld  Int
+
+  /// CALIBRATION (older) | VALIDATION (newer). The walk-forward guard: a model
+  /// is fitted on the first and graded on the second, and never the reverse.
+  split String
+
+  createdAt DateTime @default(now())
+
+  @@unique([strategyId, rulesHash, symbol, timeframe, barTime])
+  @@index([strategyId, rulesHash])
+  @@index([score])
+  @@index([split])
+}
+
+/// A fitted calibration model. Versioned, and NEVER overwritten.
+///
+/// A signal published on Tuesday claimed a number produced by Tuesday's model.
+/// If Wednesday's refit replaced it in place, Tuesday's signal would be judged
+/// against a model that did not exist when it spoke — and the platform's track
+/// record would become unfalsifiable, which is a politer word for fictional.
+model CalibrationModel {
+  version Int    @id
+  method  String
+
+  /// Exactly one row may be active. Enforced in the repository, because a
+  /// partial unique index is not expressible here and two active models would
+  /// mean two different answers to the same question.
+  active Boolean @default(false)
+
+  /// What it was fitted on. Without this, a win rate is a rumour.
+  corpus Json
+  bins   Json
+
+  plattA Float?
+  plattB Float?
+
+  /// Flattering. Reported anyway, next to the one that can embarrass it.
+  inSample Json
+  /// Data the model had never seen. THIS is the number that counts.
+  outOfSample Json
+
+  fittedAt  DateTime
+  createdAt DateTime @default(now())
+
+  @@index([active])
+}

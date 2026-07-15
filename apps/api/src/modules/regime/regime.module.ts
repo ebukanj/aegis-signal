@@ -49,6 +49,6 @@ import { RegimeCache } from "./application/cache/regime.cache";
     RegimeCache,
     RegimeService,
   ],
-  exports: [RegimeService, CompatibilityService, AlignmentService],
+  exports: [RegimeService, CompatibilityService, AlignmentService, RegimeClassifier],
 })
 export class RegimeModule {}

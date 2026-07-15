@@ -226,6 +226,71 @@ const RSI_14 = indicatorKey({ indicator: "rsi", timeframe: "1h", params: { perio
 
 /* ── Interpreting the document ─────────────────────────────────────── */
 
+describe("the breakout shift — the tautology the replay caught", () => {
+  /*
+   * A live replay over two years of real Binance history produced ZERO candidates
+   * from Breakout and Pattern Break, across ten symbols. The cause was a single
+   * mis-stated condition:
+   *
+   *     close > highest_high(20)
+   *
+   * `highest_high(20)` at bar i is the max high over the window ENDING AT i, which
+   * includes bar i's own high. A candle's high is never below its close, so
+   * `close > highest_high` is `close > max(…, thisBarsHigh)` — never true. The
+   * strategy could not fire, and nothing said why.
+   *
+   * The fix is `shift: 1` on the operand: compare against the highest high of the
+   * bars BEFORE this one. These two tests prove the tautology exists and that the
+   * shift resolves it — so nobody can "simplify" the shift away without a red bar.
+   */
+  const HIGHEST_20 = indicatorKey({
+    indicator: "highest_high",
+    timeframe: "1h",
+    params: { period: 20 },
+  });
+  const CLOSE = indicatorKey({ indicator: "close", timeframe: "1h", params: {} });
+
+  /* Prior bars' high tops out at 99; the last bar closes at 99.5, breaking it. */
+  const highestSeries = [...new Array<Maybe>(58).fill(99), 99, 100];
+  const closeSeries = [...new Array<Maybe>(59).fill(98), 99.5];
+
+  const breakoutRule = (shift?: number) =>
+    strategy({
+      entry: [
+        {
+          kind: "rule",
+          negate: false,
+          condition: {
+            kind: "comparison",
+            left: { kind: "indicator", indicator: "close" },
+            op: "gt",
+            right: { kind: "indicator", indicator: "highest_high", period: 20, ...(shift ? { shift } : {}) },
+          },
+        },
+      ],
+    });
+
+  it("WITHOUT the shift, a genuine breakout still fails — the condition is tautological", () => {
+    const result = evaluator.evaluate(
+      breakoutRule(),
+      contextFor({ indicators: { [HIGHEST_20]: highestSeries, [CLOSE]: closeSeries } }),
+    );
+
+    /* close 99.5 is NOT greater than highest_high 100 (which includes this bar). */
+    expect(result.kind).toBe("rejected");
+  });
+
+  it("WITH shift: 1, the same breakout fires — it compares against the PRIOR high", () => {
+    const result = evaluator.evaluate(
+      breakoutRule(1),
+      contextFor({ indicators: { [HIGHEST_20]: highestSeries, [CLOSE]: closeSeries } }),
+    );
+
+    /* close 99.5 IS greater than the prior bar's highest_high of 99. */
+    expect(result.kind).toBe("candidate");
+  });
+});
+
 describe("the evaluator interprets a document", () => {
   it("produces a CANDIDATE when every rule passes", () => {
     const result = evaluator.evaluate(
