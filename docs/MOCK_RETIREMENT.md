@@ -45,7 +45,7 @@ endpoint ships, the mock is **deleted, not adapted**. Adapting it — keeping it
 | ~~`features/signals/hooks/use-live-price.ts`~~ | ~~Live price~~ | **RETIRED in M03.** The seeded random walk is deleted. Price now streams from Binance over the `market` Socket.IO namespace (`price` event) via `lib/market-socket.ts`. **Entry status still computed in the hook — it belongs to the Risk Engine and moves there in M05.** | ✅ M03 |
 | ~~`features/insights/data/mock-insights.ts`~~ | ~~News, risk flags~~ | **RETIRED (M12).** `GET /api/v1/insights` serves real classified news + corroborated risk flags. Social/fundamentals architecture-only (empty). |
 | ~~`features/track-record/data/mock-record.ts`~~ | ~~Track Record + reliability curve~~ | **RETIRED (M11).** `GET /api/v1/track-record` serves the Outcome Ledger's real settled trades + the calibration curve. |
-| `features/notifications/data/mock-notifications.ts` | Notification centre | `GET /api/v1/notifications` | M10 — Notifications |
+| ~~`features/notifications/data/mock-notifications.ts`~~ | ~~Notification centre~~ | **RETIRED (M13).** `GET /api/v1/notifications` serves the real delivery record; a live toast fires over the `notifications` socket. |
 | `features/settings/data/mock-settings.ts` | Settings | `GET /api/v1/settings` | M11 — Users |
 | `features/admin/data/mock-admin.ts` | Admin console | `GET /api/v1/admin/*` | M11 — Users |
 | `constants/strategies.ts` *(the six seeds)* | Strategies page | **Not a mock.** These are *seeds* — the backend loads the same documents into the `Strategy` table (ADR-023). They move server-side; they are not deleted. | M04 |

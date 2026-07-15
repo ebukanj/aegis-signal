@@ -20,7 +20,7 @@ export class NormalizationPipeline {
     private readonly classifier: ClassificationEngine,
   ) {}
 
-  normalize(collector: IInsightCollector, raw: RawItem, now: number): Insight {
+  normalize(collector: Pick<IInsightCollector, "provider" | "source">, raw: RawItem, now: number): Insight {
     const text = `${raw.title} ${raw.description}`;
     const entities = this.entities.extract(text);
     const coins = this.entities.coins(entities);

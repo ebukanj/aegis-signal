@@ -1,11 +1,14 @@
 "use client";
 
+import { useEffect } from "react";
+import { toast } from "sonner";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { OfflineBanner } from "@/components/layout/offline-banner";
 import { SkipToContent } from "@/components/layout/skip-to-content";
 import { Topbar } from "@/components/layout/topbar";
 import { useUiStore } from "@/stores/ui-store";
+import { onNotification } from "@/lib/notifications-socket";
 
 /**
  * Authenticated platform shell: sidebar + topbar + workspace content.
@@ -17,6 +20,14 @@ export default function PlatformLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed);
+
+  /* A live toast on any delivery, anywhere in the app — the Notification Engine's
+   * in-app channel reaching the trader the instant an event fires. */
+  useEffect(() => {
+    return onNotification((n) => {
+      toast(n.title, { description: n.body || undefined });
+    });
+  }, []);
 
   return (
     <SidebarProvider

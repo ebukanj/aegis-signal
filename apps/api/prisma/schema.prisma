@@ -376,3 +376,48 @@ model Insight {
   @@index([publishedAt])
   @@index([coins])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Milestone 13 — the Notification Engine. The last mile.
+//
+// It delivers information; it decides nothing. Every delivery carries its whole
+// lifecycle as a matter of record — a notification the platform cannot prove it
+// delivered is one a trader cannot rely on.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// One attempt to deliver one notification to one recipient on one channel.
+///
+/// The `id` is DETERMINISTIC — a hash of (notification source, recipient, channel)
+/// — which is what makes "exactly once" enforceable: a re-processed event yields
+/// the same id and the unique key refuses the duplicate. Status transitions and
+/// `attempts` are the observability the engine promises.
+model Notification {
+  id String @id
+
+  type     String
+  priority String
+  channel  String
+
+  recipient String
+  subject   String?
+
+  /// The rendered message (title/markdown/plain/link), frozen at render time.
+  message Json
+
+  /// QUEUED | SENDING | DELIVERED | RETRYING | FAILED | SUPPRESSED | CANCELLED | EXPIRED
+  status           String
+  attempts         Int     @default(0)
+  providerResponse String?
+
+  createdAt   BigInt
+  scheduledFor BigInt
+  deliveredAt BigInt?
+
+  recordedAt DateTime @default(now())
+
+  @@index([status])
+  @@index([recipient])
+  @@index([channel])
+  @@index([type])
+  @@index([createdAt])
+}

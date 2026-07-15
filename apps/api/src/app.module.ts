@@ -20,6 +20,7 @@ import { ConfidenceModule } from "./modules/confidence/confidence.module";
 import { SignalModule } from "./modules/signals/signal.module";
 import { LedgerModule } from "./modules/ledger/ledger.module";
 import { InsightsModule } from "./modules/insights/insights.module";
+import { NotificationModule } from "./modules/notifications/notification.module";
 
 /**
  * The application.
@@ -115,6 +116,7 @@ import { InsightsModule } from "./modules/insights/insights.module";
     SignalModule,
     LedgerModule,
     InsightsModule,
+    NotificationModule,
 
     /*
      * Still to come, in pipeline order:
