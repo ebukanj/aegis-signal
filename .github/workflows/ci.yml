@@ -47,9 +47,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No `version` input — the action reads `packageManager` from package.json,
+      # so CI and every developer machine run the IDENTICAL pnpm. Specifying both
+      # is an error the action refuses outright ("multiple versions specified"),
+      # which is exactly how this workflow failed on its first run.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:
@@ -93,5 +95,19 @@ jobs:
           context: .
           file: apps/api/Dockerfile
           push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The web image too — including the standalone tracing step that cannot be
+      # verified on a Windows dev box (symlinks need Developer Mode there). If
+      # this passes, the Coolify build will.
+      - name: Build Web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: false
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://api.example.com
           cache-from: type=gha
           cache-to: type=gha,mode=max
