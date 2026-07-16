@@ -5,9 +5,9 @@ import { InAppChannel } from "../../infrastructure/channels/in-app.channel";
 import {
   EmailChannel,
   PushChannel,
-  TelegramChannel,
   WhatsappChannel,
 } from "../../infrastructure/channels/external.channels";
+import { TelegramChannel } from "../../infrastructure/channels/telegram.channel";
 
 /**
  * The channels, keyed by name.

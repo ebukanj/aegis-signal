@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Integration } from "../types";
+import { TelegramConnectCard } from "./telegram-connect-card";
 
 export function IntegrationsSettingsView({ integrations }: { integrations: Integration[] }) {
   return (
@@ -9,6 +10,11 @@ export function IntegrationsSettingsView({ integrations }: { integrations: Integ
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">Integrations</h2>
         <p className="text-muted-foreground text-sm mt-1">Connect Aegis Signal with your favorite third-party services.</p>
+      </div>
+
+      {/* Live delivery integrations come first — the rest of the grid is roadmap. */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <TelegramConnectCard />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

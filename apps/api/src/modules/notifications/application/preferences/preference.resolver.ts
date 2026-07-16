@@ -1,9 +1,10 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Optional } from "@nestjs/common";
 import type {
   NotificationChannel,
   NotificationPreferences,
   NotificationPriority,
 } from "@aegis/contracts";
+import { NotificationPreferencesProvider } from "./notification-preferences.provider";
 
 const PRIORITY_RANK: Record<NotificationPriority, number> = {
   CRITICAL: 3,
@@ -26,9 +27,9 @@ const PRIORITY_RANK: Record<NotificationPriority, number> = {
 @Injectable()
 export class PreferenceResolver {
   /**
-   * The default profile, until a user system exists (that milestone loads this
-   * from settings and nothing else changes). Conservative: in-app only, everything
-   * medium-and-up, quiet hours off — a sensible baseline that annoys no one.
+   * The default profile for a recipient we know nothing about (including the
+   * broadcast "default"). Conservative: in-app only, quiet hours off — a sensible
+   * baseline that annoys no one.
    */
   private readonly defaultProfile: NotificationPreferences = {
     recipient: "default",
@@ -41,8 +42,12 @@ export class PreferenceResolver {
     minimumConfidence: 0,
   };
 
-  preferencesFor(_recipient: string): NotificationPreferences {
-    return this.defaultProfile;
+  /* Optional so unit tests can `new PreferenceResolver()`. In the app the provider
+   * is injected and supplies each real user's mapped preferences from its cache. */
+  constructor(@Optional() private readonly provider?: NotificationPreferencesProvider) {}
+
+  preferencesFor(recipient: string): NotificationPreferences {
+    return this.provider?.get(recipient) ?? this.defaultProfile;
   }
 
   /**

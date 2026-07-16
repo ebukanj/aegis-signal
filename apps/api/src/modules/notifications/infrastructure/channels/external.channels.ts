@@ -66,23 +66,6 @@ abstract class ExternalChannel implements INotificationChannel {
 }
 
 @Injectable()
-export class TelegramChannel extends ExternalChannel {
-  readonly channel: NotificationChannel = "TELEGRAM";
-  protected readonly credentialEnv = "TELEGRAM_BOT_TOKEN";
-
-  protected async deliver(notification: Notification): Promise<DeliveryResult> {
-    /*
-     * With a token this would POST to the Bot API sendMessage endpoint with
-     * `parse_mode: "MarkdownV2"` and the recipient's chat id. Telegram markdown is
-     * the reason `RenderedMessage` carries a markdown form. Left unimplemented on
-     * purpose — a live token turns this into one fetch, not a redesign.
-     */
-    this.logger.debug(`[telegram] would send: ${notification.message.title}`);
-    return { ok: true, providerResponse: "telegram:simulated" };
-  }
-}
-
-@Injectable()
 export class WhatsappChannel extends ExternalChannel {
   readonly channel: NotificationChannel = "WHATSAPP";
   protected readonly credentialEnv = "WHATSAPP_API_KEY";

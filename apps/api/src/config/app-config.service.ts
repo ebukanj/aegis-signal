@@ -121,7 +121,8 @@ export class AppConfigService {
 
   get notifications() {
     return {
-      telegramToken: this.get("TELEGRAM_TOKEN"),
+      telegramBotToken: this.get("TELEGRAM_BOT_TOKEN"),
+      telegramBotUsername: this.get("TELEGRAM_BOT_USERNAME"),
       whatsappToken: this.get("WHATSAPP_TOKEN"),
     };
   }

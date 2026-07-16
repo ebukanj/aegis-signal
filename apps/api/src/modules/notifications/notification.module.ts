@@ -2,17 +2,22 @@ import { Module } from "@nestjs/common";
 
 import { PrismaModule } from "../../core/database/prisma.module";
 import { SignalModule } from "../signals/signal.module";
+import { AuthModule } from "../auth/auth.module";
 
 import { InAppChannel } from "./infrastructure/channels/in-app.channel";
 import {
   EmailChannel,
   PushChannel,
-  TelegramChannel,
   WhatsappChannel,
 } from "./infrastructure/channels/external.channels";
+import { TelegramChannel } from "./infrastructure/channels/telegram.channel";
+import { TelegramClient } from "./infrastructure/telegram/telegram.client";
+import { TelegramService } from "./application/telegram/telegram.service";
+import { TelegramPollingWorker } from "./application/telegram/telegram-polling.worker";
 import { ChannelRegistry } from "./application/channels/channel.registry";
 import { TemplateRenderer } from "./application/templates/template.renderer";
 import { PreferenceResolver } from "./application/preferences/preference.resolver";
+import { NotificationPreferencesProvider } from "./application/preferences/notification-preferences.provider";
 import { RetryPolicy } from "./application/retry/retry.policy";
 import { NotificationOrchestrator } from "./application/orchestrator/notification.orchestrator";
 import { EventRouter } from "./application/routing/event.router";
@@ -20,6 +25,7 @@ import { NotificationReadService } from "./application/read/notification-read.se
 import { NotificationRepository } from "./infrastructure/repository/notification.repository";
 import { NotificationGateway } from "./infrastructure/notification.gateway";
 import { NotificationController } from "./notification.controller";
+import { TelegramController } from "./telegram.controller";
 
 /**
  * THE NOTIFICATION ENGINE — the communication backbone.
@@ -39,17 +45,21 @@ import { NotificationController } from "./notification.controller";
  * redesign.
  */
 @Module({
-  imports: [PrismaModule, SignalModule],
-  controllers: [NotificationController],
+  imports: [PrismaModule, SignalModule, AuthModule],
+  controllers: [NotificationController, TelegramController],
   providers: [
     InAppChannel,
     TelegramChannel,
     WhatsappChannel,
     EmailChannel,
     PushChannel,
+    TelegramClient,
+    TelegramService,
+    TelegramPollingWorker,
     ChannelRegistry,
     TemplateRenderer,
     PreferenceResolver,
+    NotificationPreferencesProvider,
     RetryPolicy,
     NotificationRepository,
     NotificationOrchestrator,

@@ -2,8 +2,10 @@ import {
   ConflictException,
   Injectable,
   Logger,
+  Optional,
   UnauthorizedException,
 } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { User as PrismaUser } from "@prisma/client";
 import {
   userPreferencesSchema,
@@ -46,6 +48,10 @@ export class AuthService {
     private readonly users: UserRepository,
     private readonly passwords: PasswordService,
     private readonly tokens: TokenService,
+    /* Optional so a unit test can construct the service without the event bus. In
+     * the app it is always injected, and downstream engines (the notification
+     * preferences cache) listen for the change rather than being called. */
+    @Optional() private readonly events?: EventEmitter2,
   ) {}
 
   async register(input: RegisterRequest): Promise<AuthResponse> {
@@ -127,7 +133,19 @@ export class AuthService {
     const current = await this.preferences(userId);
     const merged = userPreferencesSchema.parse({ ...current, ...patch });
     await this.users.upsertPreferences(userId, merged);
+    // The notification layer keeps a cache of who wants what, on which channel —
+    // it refreshes this user when it hears this.
+    this.events?.emit("user.preferences.changed", { userId, preferences: merged });
     return merged;
+  }
+
+  /** Every user's id + preferences — for the notification preferences cache. */
+  async allPreferences(): Promise<{ userId: string; preferences: UserPreferences }[]> {
+    const rows = await this.users.allPreferences();
+    return rows.map((row) => ({
+      userId: row.userId,
+      preferences: userPreferencesSchema.parse(row.data ?? {}),
+    }));
   }
 
   /* ── Watchlist ───────────────────────────────────────────────────── */

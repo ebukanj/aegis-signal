@@ -31,6 +31,12 @@ export interface DispatchRequest {
   strategyId?: string | null;
   confidence?: number | null;
   recipient?: string;
+  /**
+   * Restrict this dispatch to these channels (intersected with what the recipient
+   * has enabled). Used by the per-user Telegram fan-out, which must NOT also fire
+   * in-app — the in-app feed is already carried by the broadcast dispatch.
+   */
+  onlyChannels?: NotificationChannel[];
 }
 
 /**
@@ -87,6 +93,11 @@ export class NotificationOrchestrator {
       confidence: request.confidence ?? null,
       now,
     });
+
+    /* Narrow to the requested channels, if the caller asked for a subset. */
+    if (request.onlyChannels) {
+      resolved.channels = resolved.channels.filter((c) => request.onlyChannels!.includes(c));
+    }
 
     /* Fully suppressed — record ONE suppressed row (so a trader can see it was held
      * and why) and stop. */

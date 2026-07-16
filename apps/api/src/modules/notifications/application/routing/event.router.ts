@@ -7,6 +7,7 @@ import {
   type DispatchRequest,
 } from "../orchestrator/notification.orchestrator";
 import { TemplateRenderer } from "../templates/template.renderer";
+import { NotificationPreferencesProvider } from "../preferences/notification-preferences.provider";
 import { SignalRepository } from "../../../signals/infrastructure/repository/signal.repository";
 
 /**
@@ -32,6 +33,7 @@ export class EventRouter {
     private readonly orchestrator: NotificationOrchestrator,
     private readonly templates: TemplateRenderer,
     private readonly signals: SignalRepository,
+    private readonly recipients: NotificationPreferencesProvider,
   ) {}
 
   /* ── Signals ───────────────────────────────────────────────────── */
@@ -56,6 +58,26 @@ export class EventRouter {
       strategyId: signal.strategies[0],
       confidence: signal.confidence.score,
     });
+
+    /*
+     * Telegram fan-out. The dispatch above carries the in-app feed (a broadcast);
+     * this reaches each user who linked Telegram AND either watches this coin or is
+     * looking at a Prime signal. `onlyChannels: TELEGRAM` keeps it from firing
+     * in-app a second time. Per-user, so quiet hours and the enabled-channel gate
+     * are each person's own.
+     */
+    for (const target of this.recipients.telegramTargetsFor(signal.symbol, signal.isPrime)) {
+      await this.dispatch({
+        type,
+        message,
+        dedupeKey: signal.id,
+        subject: signal.symbol,
+        strategyId: signal.strategies[0],
+        confidence: signal.confidence.score,
+        recipient: target.userId,
+        onlyChannels: ["TELEGRAM"],
+      });
+    }
   }
 
   @OnEvent("signals.changed")

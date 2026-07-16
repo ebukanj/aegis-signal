@@ -9,7 +9,7 @@ import {
   NotificationOrchestrator,
   deliveryId,
 } from "../application/orchestrator/notification.orchestrator";
-import { ChannelRegistry } from "../application/channels/channel.registry";
+import type { ChannelRegistry } from "../application/channels/channel.registry";
 import type { DeliveryResult, INotificationChannel } from "../domain/channel";
 
 /* ── A fake in-memory repository ───────────────────────────────────── */

@@ -124,7 +124,15 @@ export const envSchema = z
       ),
 
     /* ── Integrations (optional until their milestone) ─────────────── */
-    TELEGRAM_TOKEN: z.string().optional(),
+    /**
+     * The Telegram bot token from @BotFather, and the bot's @username. Presence of
+     * the TOKEN flips the Telegram channel from a declining stub to a live sender
+     * and arms the link-polling worker. The USERNAME builds the `t.me/<bot>?start=`
+     * deep link a user taps to connect their chat. Both optional — no token means
+     * Telegram simply stays off, cleanly.
+     */
+    TELEGRAM_BOT_TOKEN: z.string().optional(),
+    TELEGRAM_BOT_USERNAME: z.string().optional(),
     WHATSAPP_TOKEN: z.string().optional(),
     OPENAI_API_KEY: z.string().optional(),
     ANTHROPIC_API_KEY: z.string().optional(),
