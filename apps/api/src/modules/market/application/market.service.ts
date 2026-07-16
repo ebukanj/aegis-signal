@@ -133,9 +133,15 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
   /* ── Streams ─────────────────────────────────────────────────────── */
 
   private wireStream(adapter: BinanceAdapter): void {
+    /*
+     * EventEmitter listeners are fire-and-forget by contract (`on` expects void),
+     * so each handler is synchronous and explicitly detaches its async work with
+     * `void` — and, unlike a bare async listener, HANDLES the rejection: a cache
+     * blip on one tick must be a logged non-event, not an unhandled rejection.
+     */
     adapter.stream.on(
       "candle",
-      async (payload: {
+      (payload: {
         exchange: ExchangeId;
         symbol: string;
         timeframe: Timeframe;
@@ -154,45 +160,46 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
          */
         if (!payload.closed) return;
 
-        await this.cache.setCandle(
-          payload.exchange,
-          payload.symbol,
-          payload.timeframe,
-          payload.candle,
-        );
-
-        this.events.emit(EVENT.MARKET_UPDATED, {
-          eventId: randomUUID(),
-          correlationId: randomUUID(),
-          occurredAt: new Date().toISOString(),
-          name: EVENT.MARKET_UPDATED,
-          exchange: payload.exchange,
-          pair: `${payload.symbol}USDT`,
-          timeframe: payload.timeframe,
-          closedCandleTime: payload.candle.time,
-        });
+        void this.cache
+          .setCandle(payload.exchange, payload.symbol, payload.timeframe, payload.candle)
+          .then(() => {
+            this.events.emit(EVENT.MARKET_UPDATED, {
+              eventId: randomUUID(),
+              correlationId: randomUUID(),
+              occurredAt: new Date().toISOString(),
+              name: EVENT.MARKET_UPDATED,
+              exchange: payload.exchange,
+              pair: `${payload.symbol}USDT`,
+              timeframe: payload.timeframe,
+              closedCandleTime: payload.candle.time,
+            });
+          })
+          .catch((error) =>
+            this.logger.warn({ err: error, symbol: payload.symbol }, "candle cache write failed"),
+          );
       },
     );
 
     adapter.stream.on(
       "ticker",
-      async (payload: {
+      (payload: {
         exchange: ExchangeId;
         symbol: string;
         ticker: Ticker;
       }) => {
-        await this.cache.setTicker(
-          payload.exchange,
-          payload.symbol,
-          payload.ticker,
-        );
-
-        // The frontend's live price rides this. Emitted on every tick because a
-        // price that updates once a minute is a price a trader cannot act on.
-        this.events.emit("market.price", {
-          symbol: payload.symbol,
-          ticker: payload.ticker,
-        });
+        void this.cache
+          .setTicker(payload.exchange, payload.symbol, payload.ticker)
+          .then(() => {
+            // The frontend's live price rides this. Emitted on every tick because a
+            // price that updates once a minute is a price a trader cannot act on.
+            this.events.emit("market.price", {
+              symbol: payload.symbol,
+              ticker: payload.ticker,
+            });
+          })
+          .catch((error) =>
+            this.logger.warn({ err: error, symbol: payload.symbol }, "ticker cache write failed"),
+          );
       },
     );
 
