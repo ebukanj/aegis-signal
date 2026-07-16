@@ -52,6 +52,14 @@ export const opportunitySchema = z
     /** Expected reward-to-risk multiple, e.g. 2.4 */
     rewardRisk: z.number().positive(),
 
+    /**
+     * The live last price at the moment the row was produced. Null when the
+     * platform has no price yet — the UI says "waiting" rather than inventing one.
+     * The signal feed leaves this null (live price streams over the socket); the
+     * Scanner populates it so a trader sees how far price sits from the entry.
+     */
+    currentPrice: priceSchema.nullable().default(null),
+
     regime: marketRegimeSchema,
     status: opportunityStatusSchema,
     generatedAt: timestampSchema,
@@ -91,3 +99,38 @@ export const signalFeedSchema = z.object({
   validated: opportunityListSchema,
 });
 export type SignalFeed = z.infer<typeof signalFeedSchema>;
+
+/* ── On-demand Market Scanner (M15) ────────────────────────────────── */
+
+/**
+ * A scan the user asked for, right now. This is the same live pipeline the
+ * background worker runs — market data → indicators → patterns → regime →
+ * strategy → risk → confidence — but scoped to what the toolbar selected and
+ * returned synchronously with its diagnostics, rather than published.
+ *
+ * `market` / `timeframe` / `exchange` of `"ALL"` (or omitted) mean "do not
+ * filter that dimension". The scan never invents a universe; it enumerates the
+ * symbols the enabled exchanges actually list.
+ */
+export const scanRequestSchema = z.object({
+  market: z.enum(["SPOT", "PERPETUAL", "ALL"]).default("ALL"),
+  timeframe: z.union([timeframeSchema, z.literal("ALL")]).default("ALL"),
+  exchange: z.string().default("ALL"),
+});
+export type ScanRequest = z.infer<typeof scanRequestSchema>;
+
+/**
+ * The result of a scan: the ranked opportunities that passed strategy AND risk,
+ * plus the honest diagnostics a trader needs to trust a small number — how many
+ * pairs were actually checked, across how many exchanges, and how long it took.
+ * Zero passes is a valid, common answer, not an error.
+ */
+export const scanResultSchema = z.object({
+  opportunities: opportunityListSchema,
+  pairsChecked: z.number().int().nonnegative(),
+  exchanges: z.number().int().nonnegative(),
+  passed: z.number().int().nonnegative(),
+  durationMs: z.number().int().nonnegative(),
+  scannedAt: timestampSchema,
+});
+export type ScanResult = z.infer<typeof scanResultSchema>;

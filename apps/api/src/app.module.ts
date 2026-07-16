@@ -18,6 +18,7 @@ import { StrategyModule } from "./modules/strategy/strategy.module";
 import { RiskModule } from "./modules/risk/risk.module";
 import { ConfidenceModule } from "./modules/confidence/confidence.module";
 import { SignalModule } from "./modules/signals/signal.module";
+import { ScanModule } from "./modules/scan/scan.module";
 import { LedgerModule } from "./modules/ledger/ledger.module";
 import { InsightsModule } from "./modules/insights/insights.module";
 import { NotificationModule } from "./modules/notifications/notification.module";
@@ -115,6 +116,7 @@ import { AdminModule } from "./modules/admin/admin.module";
     RiskModule,
     ConfidenceModule,
     SignalModule,
+    ScanModule,
     LedgerModule,
     InsightsModule,
     NotificationModule,

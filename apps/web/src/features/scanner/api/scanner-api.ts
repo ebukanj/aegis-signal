@@ -1,27 +1,19 @@
-import {
-  mockOpportunities,
-  scannerFilterOptions,
-} from "@/features/scanner/data/mock-opportunities";
-import { runMockScan } from "@/features/scanner/data/mock-scan";
-import type { ScanRequest, ScanResult } from "@/features/scanner/data/mock-scan";
-import type { Opportunity } from "@/features/scanner/types";
+import { apiGet, apiSend } from "@/lib/api";
+import type { ScanRequest, ScanResult } from "@aegis/contracts";
 
 /**
- * Scanner data access. Simulates the REST API with mock data + latency.
- * Each function becomes a fetch when the backend ships.
+ * Market Scanner data access — LIVE (M15).
+ *
+ * The scanner is the same live pipeline the platform runs itself, exposed as a
+ * tool: `GET /scan` returns the most recent sweep, `POST /scan` runs the scan the
+ * user asked for. Nothing here is mock — the rows are real risk-approved,
+ * confidence-scored opportunities, and an empty result is the honest, common case.
  */
-
-const simulate = <T>(data: T, delayMs = 600): Promise<T> =>
-  new Promise((resolve) => setTimeout(() => resolve(data), delayMs));
-
 export const scannerApi = {
+  /** The most recent sweep — the page's initial paint. */
+  getLatest: (): Promise<ScanResult> => apiGet<ScanResult>("/scan"),
+
   /** Run the scan the user asked for and return the ranked result. */
   runScan: (request: ScanRequest): Promise<ScanResult> =>
-    simulate(runMockScan(request), 1400),
-
-  /** The ranked set the Signals workspace consumes. */
-  getOpportunities: (): Promise<Opportunity[]> =>
-    simulate(mockOpportunities, 650),
-
-  getFilterOptions: () => scannerFilterOptions,
+    apiSend<ScanResult>("/scan", request),
 };

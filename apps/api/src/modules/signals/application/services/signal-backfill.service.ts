@@ -7,6 +7,7 @@ import type {
   RiskDecision,
 } from "@aegis/contracts";
 
+import { AppConfigService } from "../../../../config/app-config.service";
 import { CalibrationRepository } from "../../../confidence/infrastructure/repository/calibration.repository";
 import { CalibrationService } from "../../../confidence/application/services/calibration.service";
 import { timeframeMs } from "../../../indicators/application/services/timeframe.resolver";
@@ -45,19 +46,27 @@ export class SignalBackfillService implements OnModuleInit {
     private readonly calibration: CalibrationService,
     private readonly signals: SignalService,
     private readonly repository: SignalRepository,
+    private readonly config: AppConfigService,
   ) {}
 
   /**
-   * Bootstrap the feed on boot — but ONLY when it is empty.
+   * Bootstrap the feed on boot — but ONLY when explicitly asked, and ONLY when the
+   * feed is empty.
    *
-   * This makes the platform self-populating from its own calibration corpus, so the
-   * app is live the moment it starts rather than needing a manual seed. It is a
-   * one-time bootstrap, not a recurring job: once signals exist, it does nothing,
-   * and the deterministic ids mean it could run a hundred times and never
-   * double-publish. When the continuous scan worker lands, THAT becomes the source
-   * of live signals and this quietly stops finding an empty feed to fill.
+   * ── The scan worker has landed, so this is now OFF by default ──
+   *
+   * This service existed because nothing was continuously producing live signals,
+   * so the app booted to an empty feed. The Live Scan (M15) is now that source, and
+   * historical corpus setups carry 2024 entry prices — published today they would
+   * read as already-invalidated, which is exactly the stale feed the owner rejected.
+   *
+   * So it only runs when `SIGNAL_BACKFILL_ON_BOOT=true`, a deliberate opt-in for
+   * demoing the pipeline without a live exchange connection. In production the live
+   * scan fills the feed, and this finds nothing to do.
    */
   async onModuleInit(): Promise<void> {
+    if (!this.config.scan.backfillOnBoot) return;
+
     const existing = await this.repository.countByStatus();
     const total = Object.values(existing).reduce((a, n) => a + n, 0);
 

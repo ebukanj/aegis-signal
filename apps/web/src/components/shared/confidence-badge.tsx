@@ -70,7 +70,7 @@ export function ConfidenceBadge({
         </span>
       ) : (
         <span className="ml-1 text-[9px] uppercase tracking-wide opacity-70">
-          uncal.
+          UC
         </span>
       )}
     </StatusBadge>

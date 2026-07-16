@@ -54,6 +54,46 @@ export const envSchema = z
     CCXT_TIMEOUT: z.coerce.number().int().positive().default(15_000),
     WS_HEARTBEAT: z.coerce.number().int().positive().default(30_000),
 
+    /* ── Live Scan (M15) ───────────────────────────────────────────── */
+    /**
+     * The continuous scan is what makes the platform live — it sweeps the
+     * universe on this interval, runs the full pipeline, and publishes real
+     * signals. Off only for a deploy that consumes signals from elsewhere.
+     */
+    SCAN_ENABLED: z
+      .enum(["true", "false"])
+      .default("true")
+      .transform((v) => v === "true"),
+    /**
+     * How often a full sweep runs. Below a bar's length so ordering stays fresh,
+     * but not so tight that fetching N symbols × several timeframes trips an
+     * exchange rate limit. 90s is a safe default for ~60 symbols.
+     */
+    SCAN_INTERVAL_MS: z.coerce.number().int().positive().default(90_000),
+    /**
+     * The ceiling on how many symbols one sweep touches. The universe can be
+     * large; this bounds the work so a broad scan never gets the platform IP
+     * banned (market.config warns: a ban blinds every strategy at once).
+     */
+    SCAN_MAX_SYMBOLS: z.coerce.number().int().positive().default(60),
+    /**
+     * Priority coins, scanned first and always. Comma-separated bases
+     * ("BTC,ETH,SOL"). Empty falls back to the market module's DEFAULT_UNIVERSE.
+     * Everything the exchanges additionally list is scanned after these, up to
+     * SCAN_MAX_SYMBOLS — so opportunity is not restricted to a fixed shortlist.
+     */
+    SCAN_UNIVERSE: z.string().optional(),
+    /**
+     * Bootstrap the feed from the historical calibration corpus on boot. Was the
+     * only source before the live scan existed; now OFF by default, because the
+     * live worker is the source of truth and historical setups would show as
+     * already-invalidated. Leave false in production.
+     */
+    SIGNAL_BACKFILL_ON_BOOT: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((v) => v === "true"),
+
     /**
      * DNS servers for exchange hostnames only. Comma-separated IPs.
      *

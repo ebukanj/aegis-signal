@@ -92,6 +92,21 @@ export class AppConfigService {
     };
   }
 
+  /* ── Live Scan (M15) ─────────────────────────────────────────────── */
+
+  get scan() {
+    return {
+      enabled: this.get("SCAN_ENABLED"),
+      intervalMs: this.get("SCAN_INTERVAL_MS"),
+      maxSymbols: this.get("SCAN_MAX_SYMBOLS"),
+      priority: (this.get("SCAN_UNIVERSE") ?? "")
+        .split(",")
+        .map((s) => s.trim().toUpperCase())
+        .filter(Boolean),
+      backfillOnBoot: this.get("SIGNAL_BACKFILL_ON_BOOT"),
+    };
+  }
+
   /* ── Integrations ────────────────────────────────────────────────── */
 
   get notifications() {

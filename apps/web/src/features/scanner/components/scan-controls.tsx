@@ -1,9 +1,9 @@
 "use client";
 
 import { Radar } from "lucide-react";
+import type { ScanRequest } from "@aegis/contracts";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -12,23 +12,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useStrategyStore } from "@/features/strategies/stores/strategy-store";
 import { cn } from "@/lib/utils";
-import type { ScanRequest } from "@/features/scanner/data/mock-scan";
 
-/** Must match the venues signals are actually found on (mock-opportunities). */
-const EXCHANGES = ["Binance", "Bybit", "OKX"];
+/**
+ * The exchanges the platform actually scans. OKX is intentionally absent — it is
+ * disabled in the backend (no derivatives feed we can trust), so offering it here
+ * would promise a venue the scan never touches. Binance and Bybit are live.
+ */
+const EXCHANGES = ["Binance", "Bybit"] as const;
 
 /**
  * The scanner's controls.
  *
- * Someone landing here for the first time, knowing nothing about the platform,
- * must be able to see what this page is for and what to do. So: a plain
- * instruction, checkboxes with the strategies described in one line each, and
- * one obvious button.
- *
- * A strategy that is switched OFF in your normal setup can still be scanned
- * with here — that is the point of a tool. You are exploring, not being served.
+ * You choose the slice — market, timeframe, exchange — and press Scan. The scan
+ * runs your ACTIVE strategies (the ones enabled on the Strategies page); a rule
+ * you have switched off does not hunt, because a rule you rejected should not
+ * surface trades (ADR-024). Per-scan strategy selection returns with the Users
+ * milestone, when a scan can be tied to who ran it.
  */
 export function ScanControls({
   request,
@@ -41,83 +41,17 @@ export function ScanControls({
   onScan: () => void;
   scanning: boolean;
 }) {
-  const strategies = useStrategyStore((s) => s.strategies);
-
-  const toggle = (name: string) => {
-    const next = request.strategies.includes(name)
-      ? request.strategies.filter((s) => s !== name)
-      : [...request.strategies, name];
-    onChange({ ...request, strategies: next });
-  };
-
-  /**
-   * You may scan with a strategy you have switched off — that is what a tool is
-   * for. But those results are EXPLORATION, not signals: a rule you have
-   * rejected does not get to reach your phone (ADR-024).
-   */
-  const exploringWith = request.strategies.filter(
-    (name) => !strategies.some((s) => s.name === name && s.enabled),
-  );
-
   return (
     <Card className="gap-5 p-5">
       <div className="space-y-1">
         <h2 className="text-sm font-semibold tracking-tight">
-          Hunt with these strategies
+          Scan the market
         </h2>
         <p className="text-xs text-muted-foreground">
-          Pick any combination — including strategies you keep switched off. The
-          scan checks every pair on every exchange and ranks what it finds.
+          Point the live pipeline at a slice of the market. It runs your active
+          strategies and ranks whatever passes risk and confidence — best first.
         </p>
       </div>
-
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        {strategies.map((strategy) => {
-          const checked = request.strategies.includes(strategy.name);
-          return (
-            <label
-              key={strategy.id}
-              htmlFor={`scan-${strategy.id}`}
-              className={cn(
-                "flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors",
-                checked
-                  ? "border-primary/40 bg-primary/[0.04]"
-                  : "hover:border-primary/25",
-              )}
-            >
-              <Checkbox
-                id={`scan-${strategy.id}`}
-                checked={checked}
-                onCheckedChange={() => toggle(strategy.name)}
-                className="mt-0.5"
-              />
-              <span className="min-w-0 space-y-0.5">
-                <span className="flex items-center gap-1.5 text-sm font-medium">
-                  {strategy.name}
-                  {!strategy.enabled && (
-                    <span className="rounded border px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      off
-                    </span>
-                  )}
-                </span>
-                <span className="block text-xs leading-snug text-muted-foreground">
-                  {strategy.summary}
-                </span>
-              </span>
-            </label>
-          );
-        })}
-      </div>
-
-      {exploringWith.length > 0 && (
-        <p className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">Exploration.</span>{" "}
-          You are scanning with{" "}
-          {exploringWith.join(", ")} — {exploringWith.length === 1 ? "a strategy" : "strategies"} you
-          have switched off. Anything found here is for your eyes only: a rule
-          you rejected cannot become a Prime signal or reach your alerts.
-        </p>
-      )}
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1.5">
@@ -130,7 +64,7 @@ export function ScanControls({
               onChange({ ...request, market: v })
             }
           >
-            <SelectTrigger id="scan-market" className="w-40">
+            <SelectTrigger id="scan-market" className="w-44">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -154,7 +88,7 @@ export function ScanControls({
               onChange({ ...request, timeframe: v })
             }
           >
-            <SelectTrigger id="scan-timeframe" className="w-40">
+            <SelectTrigger id="scan-timeframe" className="w-44">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -175,11 +109,11 @@ export function ScanControls({
             value={request.exchange}
             onValueChange={(v) => onChange({ ...request, exchange: v })}
           >
-            <SelectTrigger id="scan-exchange" className="w-40">
+            <SelectTrigger id="scan-exchange" className="w-44">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">All exchanges</SelectItem>
+              <SelectItem value="ALL">Binance &amp; Bybit</SelectItem>
               {EXCHANGES.map((e) => (
                 <SelectItem key={e} value={e}>
                   {e}
@@ -191,7 +125,7 @@ export function ScanControls({
 
         <Button
           onClick={onScan}
-          disabled={scanning || request.strategies.length === 0}
+          disabled={scanning}
           className="ml-auto min-w-40"
           size="lg"
         >
@@ -199,12 +133,6 @@ export function ScanControls({
           {scanning ? "Scanning…" : "Scan the market"}
         </Button>
       </div>
-
-      {request.strategies.length === 0 && (
-        <p className="text-xs text-warning">
-          Pick at least one strategy to scan with.
-        </p>
-      )}
     </Card>
   );
 }

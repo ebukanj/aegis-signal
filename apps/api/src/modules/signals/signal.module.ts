@@ -61,6 +61,6 @@ import { SignalGateway } from "./infrastructure/signal.gateway";
     SignalReadService,
     SignalGateway,
   ],
-  exports: [SignalService, SignalBackfillService, SignalRepository],
+  exports: [SignalService, SignalBackfillService, SignalRepository, SignalReadService],
 })
 export class SignalModule {}

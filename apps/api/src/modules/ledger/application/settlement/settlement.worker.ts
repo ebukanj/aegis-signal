@@ -109,15 +109,34 @@ export class SettlementWorker {
         });
 
         const elapsedBars = Math.floor((Date.now() - entry.publishedAt) / barMs);
+
+        /*
+         * INVALIDATION — the owner's rule: an invalidated signal must leave the feed
+         * fast, not linger. A setup whose stop was breached before its entry ever
+         * triggered is dead — the trade it described can no longer be taken cleanly.
+         * We do not wait the full trigger window for it; we drop it on the next
+         * sweep. It settles as CANCELLED (R=0, no P&L claimed — the trade never
+         * happened), so this is honest even though it is early, and it uses only
+         * CLOSED candles, so a transient wick on an unclosed bar never cancels a live
+         * signal by mistake.
+         */
+        const invalidatedEarly =
+          candidate.exitReason === "NEVER_TRIGGERED" && invalidatedBeforeTrigger(entry, future);
+
         const definitive =
           candidate.exitReason === "STOP_LOSS" ||
           candidate.exitReason.startsWith("TARGET") ||
           (candidate.exitReason === "NEVER_TRIGGERED" && elapsedBars >= maxBarsToTrigger) ||
-          (candidate.exitReason === "EXPIRY" && elapsedBars >= maxBarsToResolve);
+          (candidate.exitReason === "EXPIRY" && elapsedBars >= maxBarsToResolve) ||
+          invalidatedEarly;
 
         if (!definitive) continue; // still genuinely open — leave it
 
-        const settlement = await this.ledger.settleWith(entry.signalId, candidate);
+        // When we drop it early, timestamp the settlement NOW rather than at the far
+        // horizon the calculator assumed, so the record's clock is honest.
+        const toSettle = invalidatedEarly ? { ...candidate, settledAt: Date.now() } : candidate;
+
+        const settlement = await this.ledger.settleWith(entry.signalId, toSettle);
         if (!settlement) continue; // lost a race — already settled
 
         settled += 1;
@@ -166,4 +185,29 @@ function terminalStatus(exitReason: string): SignalStatus {
   if (exitReason === "STOP_LOSS") return "STOPPED";
   if (exitReason.startsWith("TARGET")) return "COMPLETED";
   return "EXPIRED";
+}
+
+/**
+ * Did price breach the invalidation (stop) level BEFORE the entry ever triggered?
+ *
+ * Walks the closed candles since publication in order. The moment a bar's range
+ * contains the entry, the trade triggered and this is no longer "before trigger" —
+ * we return false and leave the outcome to the normal calculator. If instead a bar
+ * hits the stop first, the setup is invalidated: the thesis broke before the trade
+ * began, and it should leave the feed now. Same stop semantics as the outcome
+ * calculator, so the two never disagree about what "breached" means.
+ */
+export function invalidatedBeforeTrigger(
+  entry: { direction: string; entryPrice: number; stopLoss: number },
+  future: readonly { high: number; low: number }[],
+): boolean {
+  const long = entry.direction === "LONG";
+
+  for (const bar of future) {
+    if (bar.low <= entry.entryPrice && entry.entryPrice <= bar.high) return false; // triggered
+    const hitStop = long ? bar.low <= entry.stopLoss : bar.high >= entry.stopLoss;
+    if (hitStop) return true;
+  }
+
+  return false;
 }
