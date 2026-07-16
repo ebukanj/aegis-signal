@@ -1,120 +1,107 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Target, RefreshCw } from "lucide-react";
-import type { TradingPreferences } from "../types";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ApiError } from "@/lib/api";
+import { authApi } from "@/features/auth/api/auth-api";
 
-export function TradingPreferencesView({ prefs }: { prefs: TradingPreferences }) {
+/**
+ * Trading preferences — LIVE (M16). The two numbers the position calculator
+ * pre-fills for every signal: your equity and the percentage of it one trade may
+ * risk. Stored with your account, not the browser — sign in anywhere and they
+ * follow you.
+ */
+export function TradingPreferencesView() {
+  const queryClient = useQueryClient();
+
+  const prefs = useQuery({
+    queryKey: ["preferences"],
+    queryFn: () => authApi.getPreferences(),
+  });
+
+  const [equity, setEquity] = useState("");
+  const [risk, setRisk] = useState("");
+
+  useEffect(() => {
+    if (prefs.data) {
+      setEquity(String(prefs.data.accountEquity));
+      setRisk(String(prefs.data.riskPerTrade));
+    }
+  }, [prefs.data]);
+
+  const save = useMutation({
+    mutationFn: () =>
+      authApi.updatePreferences({
+        accountEquity: Number(equity),
+        riskPerTrade: Number(risk),
+      }),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["preferences"], updated);
+      toast.success("Trading preferences saved.");
+    },
+    onError: (error) =>
+      toast.error(error instanceof ApiError ? error.message : "Could not save preferences."),
+  });
+
+  const valid = Number(equity) > 0 && Number(risk) > 0 && Number(risk) <= 100;
+
   return (
-    <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+    <div className="animate-in fade-in zoom-in-95 space-y-6 duration-300">
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">Trading Preferences</h2>
-        <p className="text-muted-foreground text-sm mt-1">Configure default parameters for the backtesting and paper trading environments.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Position-sizing defaults, pre-filled on every signal&apos;s calculator.
+        </p>
       </div>
 
-      <Card className="p-6">
-        <h3 className="font-semibold mb-4 text-sm">Default Environment</h3>
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Default Exchange</label>
-            <Select defaultValue={prefs.defaultExchange.toLowerCase()}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select exchange" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="binance">Binance</SelectItem>
-                <SelectItem value="bybit">Bybit</SelectItem>
-                <SelectItem value="kraken">Kraken</SelectItem>
-              </SelectContent>
-            </Select>
+      {prefs.isPending ? (
+        <Skeleton className="h-48 w-full" />
+      ) : (
+        <Card className="max-w-xl space-y-4 p-6">
+          <div className="space-y-1.5">
+            <Label htmlFor="pref-equity">Account equity (USD)</Label>
+            <Input
+              id="pref-equity"
+              type="number"
+              min="1"
+              value={equity}
+              onChange={(e) => setEquity(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              The capital your position sizes are computed from.
+            </p>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Default Market / Pair</label>
-            <Input defaultValue={prefs.defaultMarket} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Default Timeframe</label>
-            <Select defaultValue={prefs.defaultTimeframe.toLowerCase()}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select timeframe" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="15m">15 Minutes</SelectItem>
-                <SelectItem value="1h">1 Hour</SelectItem>
-                <SelectItem value="4h">4 Hours</SelectItem>
-                <SelectItem value="1d">1 Day</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Preferred Market Regime</label>
-            <Select defaultValue="trending_volatile">
-              <SelectTrigger>
-                <SelectValue placeholder="Select regime" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="trending_volatile">Trending Volatile</SelectItem>
-                <SelectItem value="ranging">Ranging / Choppy</SelectItem>
-                <SelectItem value="trending_smooth">Trending Smooth</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </Card>
 
-      <Card className="p-6">
-        <h3 className="font-semibold mb-4 text-sm">Risk & Sizing</h3>
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Default Risk per Trade (%)</label>
-            <div className="relative">
-              <Input type="number" step="0.1" defaultValue={prefs.defaultRiskPct} className="pr-8" />
-              <span className="absolute right-3 top-2.5 text-muted-foreground text-sm">%</span>
-            </div>
-            <p className="text-xs text-muted-foreground">The risk engine will block signals exceeding this limit.</p>
+          <div className="space-y-1.5">
+            <Label htmlFor="pref-risk">Risk per trade (%)</Label>
+            <Input
+              id="pref-risk"
+              type="number"
+              min="0.1"
+              max="100"
+              step="0.1"
+              value={risk}
+              onChange={(e) => setRisk(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              How much of your equity one stopped-out trade may cost. 1–2% is the
+              discipline most professionals keep.
+            </p>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Default Position Size ($)</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2.5 text-muted-foreground text-sm">$</span>
-              <Input type="number" defaultValue={prefs.defaultPositionSize} className="pl-7" />
-            </div>
-          </div>
-        </div>
-      </Card>
 
-      <Card className="p-6">
-        <h3 className="font-semibold mb-4 text-sm">Workspace Behavior</h3>
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <RefreshCw className="size-5 text-muted-foreground" />
-              <div>
-                <h4 className="font-medium text-sm">Auto-Refresh Market Data</h4>
-                <p className="text-xs text-muted-foreground">Automatically fetch new candle data in the background.</p>
-              </div>
-            </div>
-            <Switch defaultChecked={prefs.autoRefresh} />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Target className="size-5 text-muted-foreground" />
-              <div>
-                <h4 className="font-medium text-sm">Auto-Save Layouts</h4>
-                <p className="text-xs text-muted-foreground">Preserve chart drawings and table columns automatically.</p>
-              </div>
-            </div>
-            <Switch defaultChecked={prefs.autoSaveLayout} />
-          </div>
-        </div>
-      </Card>
-
-      <div className="flex justify-end gap-3 pt-4">
-        <Button variant="outline">Discard</Button>
-        <Button>Save Preferences</Button>
-      </div>
+          <Button onClick={() => save.mutate()} disabled={!valid || save.isPending}>
+            {save.isPending && <Loader2 className="animate-spin" />}
+            Save preferences
+          </Button>
+        </Card>
+      )}
     </div>
   );
 }

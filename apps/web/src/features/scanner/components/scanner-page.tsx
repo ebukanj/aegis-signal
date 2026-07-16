@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Radar } from "lucide-react";
-import type { Opportunity, ScanRequest, ScanResult } from "@aegis/contracts";
+import type { Opportunity, ScanRequest } from "@aegis/contracts";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,56 +13,45 @@ import { ScanResults } from "@/features/scanner/components/scan-results";
 import { SignalPanel } from "@/features/signals/components/signal-panel";
 
 /**
- * Market Scanner — a tool you operate, now running on the live pipeline (M15).
+ * Market Scanner — a tool you operate, running on the live pipeline (M15).
  *
- * The line between this and Signals:
- *
- *   SIGNALS  the machine decides — it hands you the few trades worth taking.
- *   SCANNER  you decide — you point it at a market and press Scan.
- *
- * Both are the SAME pipeline: market data → indicators → patterns → regime →
- * strategy → risk → confidence. The scanner just lets you watch it run against
- * the slice you choose. It opens on the most recent background sweep so the page
- * is never an empty shell, and re-runs on demand.
+ * A full sweep takes minutes (exchange rate limits are real), so the API never
+ * runs one inside a request. This page shows the latest completed sweep
+ * instantly; pressing Scan kicks a fresh background sweep and the page polls
+ * until its numbers land. `inProgress` is the honest signal that the pipeline is
+ * working, not broken.
  */
 export function ScannerPage() {
+  const queryClient = useQueryClient();
+
   const [request, setRequest] = useState<ScanRequest>({
     market: "ALL",
     timeframe: "ALL",
     exchange: "ALL",
   });
-
-  const [result, setResult] = useState<ScanResult | null>(null);
-  const [scanning, setScanning] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
   const [selected, setSelected] = useState<Opportunity | null>(null);
+  const [scanning, setScanning] = useState(false);
 
-  // Open on the latest background sweep — the platform is always scanning, so the
-  // page should reflect that rather than demand a click to show anything.
-  useEffect(() => {
-    let live = true;
-    scannerApi
-      .getLatest()
-      .then((latest) => live && setResult(latest))
-      .catch(() => live && setError(true))
-      .finally(() => live && setLoading(false));
-    return () => {
-      live = false;
-    };
-  }, []);
+  const query = useQuery({
+    queryKey: ["scan", "latest"],
+    queryFn: () => scannerApi.getLatest(),
+    // Poll faster while a sweep runs, slower otherwise — the background worker
+    // sweeps continuously, so the page stays current either way.
+    refetchInterval: (q) => (q.state.data?.inProgress || scanning ? 5_000 : 60_000),
+  });
 
   const scan = async () => {
     setScanning(true);
-    setError(false);
     try {
-      setResult(await scannerApi.runScan(request));
-    } catch {
-      setError(true);
+      const result = await scannerApi.runScan(request);
+      queryClient.setQueryData(["scan", "latest"], result);
     } finally {
-      setScanning(false);
+      // Polling takes over from here; the flag just tightens the interval.
+      setTimeout(() => setScanning(false), 30_000);
     }
   };
+
+  const result = query.data;
 
   return (
     <div className="flex flex-col gap-5 pb-16">
@@ -74,28 +64,16 @@ export function ScannerPage() {
         request={request}
         onChange={setRequest}
         onScan={scan}
-        scanning={scanning}
+        scanning={Boolean(result?.inProgress || scanning)}
       />
 
-      {scanning && <ScanningState />}
-      {!scanning && loading && <Skeleton className="h-64 w-full" />}
-      {!scanning && !loading && error && <ErrorState />}
-      {!scanning && !loading && !error && result && (
-        <ScanResults result={result} onSelect={setSelected} />
-      )}
+      {query.isPending && <Skeleton className="h-64 w-full" />}
+
+      {query.isError && <ErrorState />}
+
+      {result && <ScanResults result={result} onSelect={setSelected} />}
 
       <SignalPanel signal={selected} onClose={() => setSelected(null)} />
-    </div>
-  );
-}
-
-function ScanningState() {
-  return (
-    <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        Running the pipeline across the universe…
-      </p>
-      <Skeleton className="h-64 w-full" />
     </div>
   );
 }
@@ -107,12 +85,11 @@ function ErrorState() {
         <Radar className="size-6" aria-hidden />
       </div>
       <h2 className="text-lg font-semibold tracking-tight">
-        The scan could not run.
+        The scanner could not be reached.
       </h2>
       <p className="max-w-md text-sm text-muted-foreground">
-        The market pipeline is unreachable right now. Press{" "}
-        <span className="font-medium text-foreground">Scan the market</span> to
-        try again — the platform keeps scanning in the background either way.
+        The API did not answer. It retries automatically — the background scan
+        keeps running regardless.
       </p>
     </Card>
   );

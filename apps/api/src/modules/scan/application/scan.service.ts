@@ -46,6 +46,8 @@ interface SweepDiagnostics {
 export class ScanService {
   private readonly logger = new Logger(ScanService.name);
   private last: SweepDiagnostics | null = null;
+  /** One sweep at a time, whoever asked for it — the worker or a user. */
+  private sweeping = false;
 
   constructor(
     private readonly orchestrator: ScanOrchestrator,
@@ -64,6 +66,28 @@ export class ScanService {
    * diagnostics. Returns how many pairs were checked and how many setups passed.
    */
   async sweep(request?: ScanRequest): Promise<SweepDiagnostics> {
+    if (this.sweeping) {
+      // Never stack sweeps — the exchanges rate-limit the whole platform, not a
+      // caller. The one already running will publish everything this one would.
+      return (
+        this.last ?? {
+          pairsChecked: 0,
+          exchanges: enabledExchanges().length,
+          passed: 0,
+          durationMs: 0,
+          scannedAt: new Date().toISOString(),
+        }
+      );
+    }
+    this.sweeping = true;
+    try {
+      return await this.runSweep(request);
+    } finally {
+      this.sweeping = false;
+    }
+  }
+
+  private async runSweep(request?: ScanRequest): Promise<SweepDiagnostics> {
     const started = Date.now();
     const now = Date.now();
 
@@ -77,24 +101,45 @@ export class ScanService {
     const all: SignalCandidate[] = [];
     let checked = 0;
 
-    for (const { symbol, exchange } of pairs) {
-      const candlesByTimeframe = await this.fetchCandles(symbol, exchange, timeframes);
-      if (Object.keys(candlesByTimeframe).length === 0) continue;
-      checked += 1;
+    /*
+     * Two symbols in flight — enough to overlap the network waits, few enough
+     * that the CPU-heavy stages (indicators, pattern detection are synchronous
+     * math) leave gaps for the event loop. The first version ran four lanes and
+     * starved the API: /health took seven seconds DURING a sweep, which reads as
+     * an outage. A background job must never make the platform unreachable.
+     */
+    const queue = [...pairs];
+    const lane = async (): Promise<void> => {
+      for (;;) {
+        // A real timer gap between symbols — not just setImmediate. The pipeline's
+        // compute is synchronous bursts; a 25ms breath per symbol costs ~1.5s
+        // across a whole sweep and keeps HTTP, sockets and settlements responsive
+        // throughout. A background job must never read as an outage.
+        await new Promise((resolve) => setTimeout(resolve, 25));
 
-      try {
-        const candidates = await this.orchestrator.scanSymbol({
-          symbol,
-          exchange,
-          candlesByTimeframe,
-          btcByTimeframe,
-          now,
-        });
-        all.push(...candidates);
-      } catch (error) {
-        this.logger.debug({ symbol, exchange, err: error }, "Symbol scan failed — skipped");
+        const pair = queue.shift();
+        if (!pair) return;
+        const { symbol, exchange } = pair;
+
+        const candlesByTimeframe = await this.fetchCandles(symbol, exchange, timeframes);
+        if (Object.keys(candlesByTimeframe).length === 0) continue;
+        checked += 1;
+
+        try {
+          const candidates = await this.orchestrator.scanSymbol({
+            symbol,
+            exchange,
+            candlesByTimeframe,
+            btcByTimeframe,
+            now,
+          });
+          all.push(...candidates);
+        } catch (error) {
+          this.logger.debug({ symbol, exchange, err: error }, "Symbol scan failed — skipped");
+        }
       }
-    }
+    };
+    await Promise.all([lane(), lane()]);
 
     // The Signal Engine owns publication: dedup, ranking, freshness, Prime budget.
     if (all.length > 0) {
@@ -125,27 +170,54 @@ export class ScanService {
   /* ── On-demand scan (the Scanner page calls this) ────────────────── */
 
   /**
-   * Run a scan the user asked for and return the ranked, published result plus its
-   * diagnostics. It IS the same sweep — a scan the user triggers is not a different
-   * pipeline from the one the platform runs itself.
+   * A scan the user asked for.
+   *
+   * ── Why this NEVER runs a sweep inside the request ──
+   *
+   * A full sweep respects the exchanges' rate limits, so it takes minutes — far
+   * past any sane HTTP timeout. The first version ran it synchronously and the
+   * page showed "the pipeline is unreachable" while the pipeline was working
+   * perfectly. So: kick a background sweep if one is not already running, return
+   * the latest completed sweep IMMEDIATELY, and say `inProgress: true` so the UI
+   * polls and flips when the fresh numbers land. The user always gets an instant,
+   * honest answer.
    */
   async scan(request: ScanRequest): Promise<ScanResult> {
-    const diagnostics = await this.sweep(request);
-    return this.resultFrom(diagnostics);
+    if (!this.sweeping) {
+      void this.sweep(request).catch((error) =>
+        this.logger.error({ err: error }, "User-triggered sweep failed"),
+      );
+    }
+    return this.resultFrom(this.last, request);
   }
 
-  /** The most recent scan, for the Scanner page's initial paint. */
+  /** The most recent scan, for the Scanner page's initial paint. Instant. */
   async latest(): Promise<ScanResult> {
-    if (!this.last) {
-      // Nothing has swept yet — do one now rather than show an empty shell.
-      return this.scan({ market: "ALL", timeframe: "ALL", exchange: "ALL" });
-    }
     return this.resultFrom(this.last);
   }
 
-  private async resultFrom(diagnostics: SweepDiagnostics): Promise<ScanResult> {
+  private async resultFrom(
+    diagnostics: SweepDiagnostics | null,
+    request?: ScanRequest,
+  ): Promise<ScanResult> {
     const feed = await this.read.feed(Date.now());
-    const opportunities = [...feed.prime, ...feed.validated];
+    let opportunities = [...feed.prime, ...feed.validated];
+
+    // Honour the toolbar's slice — the feed holds everything published; the
+    // scanner shows the part of it the user pointed at.
+    if (request) {
+      if (request.exchange && request.exchange !== "ALL") {
+        opportunities = opportunities.filter(
+          (o) => o.exchange.toUpperCase() === request.exchange.toUpperCase(),
+        );
+      }
+      if (request.timeframe && request.timeframe !== "ALL") {
+        opportunities = opportunities.filter((o) => o.timeframe === request.timeframe);
+      }
+      if (request.market && request.market !== "ALL") {
+        opportunities = opportunities.filter((o) => o.marketType === request.market);
+      }
+    }
 
     // Enrich rows with the live last price, so a trader sees how far price sits
     // from the entry. Null stays null — the UI says "waiting", never invents one.
@@ -158,11 +230,12 @@ export class ScanService {
         ...o,
         currentPrice: prices[o.coin] ?? o.currentPrice ?? null,
       })),
-      pairsChecked: diagnostics.pairsChecked,
-      exchanges: diagnostics.exchanges,
-      passed: diagnostics.passed,
-      durationMs: diagnostics.durationMs,
-      scannedAt: diagnostics.scannedAt,
+      pairsChecked: diagnostics?.pairsChecked ?? 0,
+      exchanges: diagnostics?.exchanges ?? enabledExchanges().length,
+      passed: diagnostics?.passed ?? 0,
+      durationMs: diagnostics?.durationMs ?? 0,
+      scannedAt: diagnostics?.scannedAt ?? new Date().toISOString(),
+      inProgress: this.sweeping,
     };
   }
 

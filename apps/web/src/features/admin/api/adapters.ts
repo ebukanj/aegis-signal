@@ -51,8 +51,6 @@ export function toPlatformHealth(overview: AdminOverviewDto): PlatformHealth {
     websocketServer: level(overview.system.status),
     exchangeConnections: anyExchange ? "healthy" : "critical",
     notificationServices: moduleStatus(overview, "notifications"),
-    aiServices: "offline", // No AI service is live yet — stated, never faked.
-    storage: moduleStatus(overview, "ledger"),
   };
 }
 

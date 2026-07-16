@@ -282,3 +282,107 @@
     @apply text-xs font-medium uppercase tracking-wider text-muted-foreground;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   THE POLISH LAYER (Phase 6) — depth, motion, and light for a dark
+   trading terminal. Everything here is CSS-only: zero JS cost, nothing
+   re-renders, and light mode is untouched unless explicitly included.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Ambience ── two barely-there radial washes behind the workspace so
+   cards sit ON something instead of floating in flat black. Fixed
+   attachment: painted once, never scrolls, never repaints. */
+.dark main#main-content {
+  background:
+    radial-gradient(60rem 32rem at 12% -8%, oklch(0.28 0.05 165 / 0.16), transparent 60%),
+    radial-gradient(52rem 30rem at 105% 8%, oklch(0.3 0.06 255 / 0.11), transparent 55%),
+    radial-gradient(70rem 40rem at 50% 120%, oklch(0.24 0.03 200 / 0.12), transparent 60%);
+  background-attachment: fixed;
+}
+
+/* ── Cards ── a hairline top-light (the terminal's "glass edge") plus a
+   soft lift under the pointer. Feedback, not decoration. */
+.dark [data-slot="card"] {
+  background-image: linear-gradient(to bottom, oklch(1 0 0 / 0.025), transparent 3rem);
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.05);
+}
+[data-slot="card"] {
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+.dark [data-slot="card"]:hover {
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.07),
+    0 0 0 1px oklch(1 0 0 / 0.04),
+    0 10px 28px -14px oklch(0 0 0 / 0.65);
+}
+
+/* ── Prime signals ── the few trades the platform stakes its name on get
+   a quiet, living glow. Subtle enough to live with; unmistakable at a glance. */
+.dark .prime-signal {
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.06),
+    0 0 24px -8px var(--primary);
+}
+.dark .prime-signal:hover {
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.08),
+    0 0 36px -6px var(--primary);
+}
+
+/* ── Primary buttons ── a faint vertical sheen + glow on hover, so the one
+   action that matters on a screen reads as the one action that matters. */
+.dark button[data-slot="button"].bg-primary,
+.dark a[data-slot="button"].bg-primary {
+  background-image: linear-gradient(to bottom, oklch(1 0 0 / 0.12), transparent);
+  box-shadow: 0 4px 16px -6px oklch(from var(--primary) l c h / 0.5);
+  transition: box-shadow 180ms ease, filter 180ms ease;
+}
+.dark button[data-slot="button"].bg-primary:hover,
+.dark a[data-slot="button"].bg-primary:hover {
+  box-shadow: 0 6px 22px -6px oklch(from var(--primary) l c h / 0.65);
+  filter: brightness(1.06);
+}
+
+/* ── Tables ── rows answer the pointer with a wash, headers whisper. */
+.dark [data-slot="table-row"]:hover {
+  background: oklch(1 0 0 / 0.025);
+}
+[data-slot="table-head"] {
+  @apply text-[11px] uppercase tracking-wider;
+}
+
+/* ── Sidebar ── the active item carries an accent bar; the rail feels lit
+   from within rather than painted on. */
+.dark [data-sidebar="sidebar"] {
+  background-image: linear-gradient(to bottom, oklch(1 0 0 / 0.02), transparent 8rem);
+}
+[data-sidebar="menu-button"][data-active="true"] {
+  position: relative;
+}
+[data-sidebar="menu-button"][data-active="true"]::before {
+  content: "";
+  position: absolute;
+  left: -0.5rem;
+  top: 20%;
+  bottom: 20%;
+  width: 2px;
+  border-radius: 9999px;
+  background: var(--primary);
+  box-shadow: 0 0 8px var(--primary);
+}
+
+/* ── Topbar ── a gradient hairline instead of a flat border, so the chrome
+   has a horizon line. */
+.dark header.sticky {
+  border-bottom-color: transparent;
+  background-image: linear-gradient(to bottom, oklch(1 0 0 / 0.02), transparent);
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.06);
+}
+
+/* ── Text selection ── on-brand, everywhere. */
+::selection {
+  background: oklch(from var(--primary) l c h / 0.3);
+}

@@ -9,6 +9,7 @@ import { ConfidenceModule } from "../confidence/confidence.module";
 import { LedgerModule } from "../ledger/ledger.module";
 import { InsightsModule } from "../insights/insights.module";
 import { NotificationModule } from "../notifications/notification.module";
+import { AuthModule } from "../auth/auth.module";
 import { AdminController } from "./admin.controller";
 import { MetricsController } from "./metrics.controller";
 import { AdminService } from "./application/admin.service";
@@ -40,6 +41,7 @@ import { MetricsInterceptor } from "./infrastructure/metrics.interceptor";
  */
 @Module({
   imports: [
+    AuthModule,
     AppConfigModule,
     MarketModule,
     SignalModule,

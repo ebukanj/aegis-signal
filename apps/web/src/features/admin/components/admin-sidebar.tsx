@@ -3,12 +3,18 @@
 import { useAdminStore, type AdminCategory } from "../stores/admin-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Search, LayoutDashboard, HeartPulse, Users, Shield, LineChart, 
-  ArrowRightLeft, Activity, ListOrdered, Cpu, Bell, Bot, 
-  Flag, FileClock, ScrollText, BarChart3, Settings, ShieldAlert 
+import {
+  Search, LayoutDashboard, HeartPulse, Users,
+  ArrowRightLeft, ListOrdered,
+  Flag, FileClock, ShieldAlert
 } from "lucide-react";
 
+/**
+ * Every entry here is REAL — it reads or writes the live platform. The mock
+ * panels the console used to carry (worker nodes, AI providers, fake monitoring
+ * charts, invented system logs) are gone: an admin console that shows invented
+ * infrastructure is worse than a smaller one that tells the truth.
+ */
 const navigationGroups = [
   {
     title: "Overview",
@@ -21,24 +27,13 @@ const navigationGroups = [
     title: "Access Control",
     items: [
       { id: "users", label: "Users", icon: Users },
-      { id: "roles", label: "Roles & Permissions", icon: Shield },
-    ]
-  },
-  {
-    title: "Trading Engine",
-    items: [
-      { id: "strategies", label: "Strategies", icon: LineChart },
-      { id: "exchanges", label: "Exchanges", icon: ArrowRightLeft },
-      { id: "scanner", label: "Market Scanner", icon: Activity },
     ]
   },
   {
     title: "Infrastructure",
     items: [
+      { id: "exchanges", label: "Exchanges", icon: ArrowRightLeft },
       { id: "queues", label: "Queues", icon: ListOrdered },
-      { id: "workers", label: "Workers", icon: Cpu },
-      { id: "notifications", label: "Notifications", icon: Bell },
-      { id: "ai-providers", label: "AI Providers", icon: Bot },
     ]
   },
   {
@@ -46,14 +41,11 @@ const navigationGroups = [
     items: [
       { id: "feature-flags", label: "Feature Flags", icon: Flag },
       { id: "audit-logs", label: "Audit Logs", icon: FileClock },
-      { id: "system-logs", label: "System Logs", icon: ScrollText },
-      { id: "monitoring", label: "Monitoring", icon: BarChart3 },
     ]
   },
   {
     title: "System",
     items: [
-      { id: "configuration", label: "Configuration", icon: Settings },
       { id: "maintenance", label: "Maintenance Mode", icon: ShieldAlert },
     ]
   }

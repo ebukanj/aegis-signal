@@ -1,22 +1,13 @@
 import { create } from "zustand";
 
-export type AdminCategory = 
-  | "dashboard" 
-  | "health" 
-  | "users" 
-  | "roles" 
-  | "strategies" 
-  | "exchanges" 
-  | "scanner" 
-  | "queues" 
-  | "workers" 
-  | "notifications" 
-  | "ai-providers" 
-  | "feature-flags" 
-  | "audit-logs" 
-  | "system-logs" 
-  | "monitoring" 
-  | "configuration" 
+export type AdminCategory =
+  | "dashboard"
+  | "health"
+  | "users"
+  | "exchanges"
+  | "queues"
+  | "feature-flags"
+  | "audit-logs"
   | "maintenance";
 
 interface AdminState {

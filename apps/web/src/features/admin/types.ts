@@ -10,8 +10,6 @@ export interface PlatformHealth {
   websocketServer: HealthStatus;
   exchangeConnections: HealthStatus;
   notificationServices: HealthStatus;
-  aiServices: HealthStatus;
-  storage: HealthStatus;
 }
 
 export interface AdminUser {

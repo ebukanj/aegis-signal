@@ -18,14 +18,27 @@ import {
 import { Brand } from "@/components/layout/brand";
 import { UserMenu } from "@/components/layout/user-menu";
 import { navigation } from "@/config/navigation";
+import { useAuthStore } from "@/features/auth/stores/auth-store";
 
 /**
  * Primary application sidebar.
  * Collapses to an icon rail on desktop; renders as a sheet on mobile
  * (both behaviors provided by the shadcn Sidebar primitive).
+ *
+ * RBAC: the Administration entry renders only for ADMIN/SUPER_ADMIN. The server
+ * enforces the real boundary — hiding the link just keeps the UI honest.
  */
 export function AppSidebar() {
   const pathname = usePathname();
+  const role = useAuthStore((s) => s.user?.role);
+  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
+
+  const visibleNavigation = navigation
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => item.href !== "/admin" || isAdmin),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <Sidebar collapsible="icon">
@@ -37,7 +50,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {navigation.map((section) => (
+        {visibleNavigation.map((section) => (
           <SidebarGroup key={section.label}>
             <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
             <SidebarGroupContent>

@@ -93,6 +93,12 @@ export class AuthService {
       throw new UnauthorizedException("Incorrect email or password");
     }
 
+    // AFTER the password check, so a suspended account cannot be discovered by
+    // guessing emails — you only learn it is suspended if the password was right.
+    if (user.suspended) {
+      throw new UnauthorizedException("This account is suspended — contact an administrator");
+    }
+
     return this.session(user);
   }
 
@@ -112,7 +118,36 @@ export class AuthService {
   async me(userId: string): Promise<User> {
     const user = await this.users.findById(userId);
     if (!user) throw new UnauthorizedException("Not signed in");
+    // A suspension bites here too: the token may still be cryptographically valid,
+    // but the next session hydration signs the user out.
+    if (user.suspended) throw new UnauthorizedException("This account is suspended");
     return toUser(user);
+  }
+
+  /* ── Administration (callers must already be role-gated to ADMIN) ── */
+
+  async listUsers(): Promise<User[]> {
+    return (await this.users.list()).map(toUser);
+  }
+
+  async setSuspended(actorId: string, userId: string, suspended: boolean): Promise<User> {
+    if (actorId === userId) {
+      // Suspending yourself is a lockout with no one left to undo it.
+      throw new ConflictException("You cannot suspend your own account");
+    }
+    const user = await this.users.setSuspended(userId, suspended);
+    this.logger.log(`User ${user.email} ${suspended ? "SUSPENDED" : "reinstated"} by ${actorId}`);
+    return toUser(user);
+  }
+
+  async deleteUser(actorId: string, userId: string): Promise<void> {
+    if (actorId === userId) {
+      throw new ConflictException("You cannot delete your own account from the admin console");
+    }
+    const user = await this.users.findById(userId);
+    if (!user) return; // already gone — deletion is idempotent
+    await this.users.delete(userId);
+    this.logger.warn(`User ${user.email} DELETED by ${actorId}`);
   }
 
   /* ── Preferences ─────────────────────────────────────────────────── */
@@ -196,6 +231,7 @@ function toUser(user: PrismaUser): User {
     email: user.email,
     name: user.name,
     role: user.role,
+    suspended: user.suspended,
     createdAt: user.createdAt.toISOString(),
   };
 }

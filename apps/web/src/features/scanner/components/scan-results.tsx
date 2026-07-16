@@ -54,17 +54,36 @@ export function ScanResults({
         <span className="font-numeric text-xs">
           {(result.durationMs / 1000).toFixed(1)}s
         </span>
+        {result.inProgress && (
+          <span className="flex items-center gap-1.5 text-xs text-primary">
+            <span className="size-1.5 animate-pulse rounded-full bg-primary" />
+            sweep running — results update live
+          </span>
+        )}
       </div>
 
       {result.opportunities.length === 0 ? (
         <Card className="flex flex-col items-center gap-3 border-dashed px-6 py-12 text-center">
           <SearchX className="size-6 text-muted-foreground" aria-hidden />
-          <h3 className="text-base font-semibold">Nothing passed.</h3>
-          <p className="max-w-md text-sm text-muted-foreground">
-            {result.pairsChecked} pairs checked, none met the rules right now.
-            Not trading is a position — the platform keeps scanning, and a real
-            setup will appear here the moment one exists.
-          </p>
+          {result.pairsChecked === 0 && result.inProgress ? (
+            <>
+              <h3 className="text-base font-semibold">First sweep is running.</h3>
+              <p className="max-w-md text-sm text-muted-foreground">
+                The pipeline is walking the universe right now — a full pass
+                respects exchange rate limits, so it takes a few minutes. This
+                page updates on its own as it lands.
+              </p>
+            </>
+          ) : (
+            <>
+              <h3 className="text-base font-semibold">Nothing passed.</h3>
+              <p className="max-w-md text-sm text-muted-foreground">
+                {result.pairsChecked} pairs checked, none met the rules right
+                now. Not trading is a position — the platform keeps scanning,
+                and a real setup will appear here the moment one exists.
+              </p>
+            </>
+          )}
         </Card>
       ) : (
         <Card className="overflow-hidden p-0">

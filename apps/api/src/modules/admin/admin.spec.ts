@@ -145,25 +145,46 @@ describe("AdminGuard", () => {
     else process.env.ADMIN_API_TOKEN = original;
   });
 
+  /* The guard now takes a TokenService (M16). A verifier that accepts nothing
+   * exercises the operator-token path exactly as before; one that mints roles
+   * exercises the new human path. */
+  const noJwt = { verify: () => null } as never;
+  const jwtOf = (role: string) =>
+    ({ verify: () => ({ sub: "u1", email: "a@x.com", role }) }) as never;
+
   it("is open in development when no token is set", () => {
     delete process.env.ADMIN_API_TOKEN;
-    const guard = new AdminGuard({ isProduction: false } as never);
+    const guard = new AdminGuard({ isProduction: false } as never, noJwt);
     expect(guard.canActivate(ctxFor({ headers: {} }))).toBe(true);
   });
 
   it("fails closed in production when no token is set", () => {
     delete process.env.ADMIN_API_TOKEN;
-    const guard = new AdminGuard({ isProduction: true } as never);
+    const guard = new AdminGuard({ isProduction: true } as never, noJwt);
     expect(() => guard.canActivate(ctxFor({ headers: {} }))).toThrow(ForbiddenException);
   });
 
   it("rejects a wrong token and accepts the right one", () => {
     process.env.ADMIN_API_TOKEN = "correct-horse-battery-staple-token";
-    const guard = new AdminGuard({ isProduction: true } as never);
+    const guard = new AdminGuard({ isProduction: true } as never, noJwt);
     expect(() => guard.canActivate(ctxFor({ headers: { "x-admin-token": "wrong" } }))).toThrow(ForbiddenException);
     expect(guard.canActivate(ctxFor({ headers: { "x-admin-token": "correct-horse-battery-staple-token" } }))).toBe(
       true,
     );
+  });
+
+  it("accepts a signed-in ADMIN's bearer token — the RBAC path", () => {
+    delete process.env.ADMIN_API_TOKEN;
+    const guard = new AdminGuard({ isProduction: true } as never, jwtOf("ADMIN"));
+    expect(guard.canActivate(ctxFor({ headers: { authorization: "Bearer x.y.z" } }))).toBe(true);
+  });
+
+  it("refuses a TRADER's bearer token in production", () => {
+    delete process.env.ADMIN_API_TOKEN;
+    const guard = new AdminGuard({ isProduction: true } as never, jwtOf("TRADER"));
+    expect(() =>
+      guard.canActivate(ctxFor({ headers: { authorization: "Bearer x.y.z" } })),
+    ).toThrow(ForbiddenException);
   });
 });
 

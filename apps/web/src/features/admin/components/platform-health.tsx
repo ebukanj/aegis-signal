@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Activity, Database, Server, RefreshCw, Layers, ArrowRightLeft, Bell, Bot, HardDrive } from "lucide-react";
+import { Activity, Database, Server, RefreshCw, Layers, ArrowRightLeft, Bell } from "lucide-react";
 import type { PlatformHealth, HealthStatus } from "../types";
 
 const statusConfig: Record<HealthStatus, { color: string, label: string }> = {
@@ -19,8 +19,6 @@ export function PlatformHealthView({ health }: { health: PlatformHealth }) {
     { key: "websocketServer", name: "WebSockets", icon: Activity, desc: "Real-time Pushes" },
     { key: "exchangeConnections", name: "Exchanges", icon: ArrowRightLeft, desc: "CCXT Integrations" },
     { key: "notificationServices", name: "Notifications", icon: Bell, desc: "Delivery Pipelines" },
-    { key: "aiServices", name: "AI Gateway", icon: Bot, desc: "LLM Providers" },
-    { key: "storage", name: "Object Storage", icon: HardDrive, desc: "S3 Compatible Store" },
   ];
 
   return (

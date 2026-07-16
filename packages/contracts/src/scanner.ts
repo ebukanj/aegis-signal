@@ -132,5 +132,12 @@ export const scanResultSchema = z.object({
   passed: z.number().int().nonnegative(),
   durationMs: z.number().int().nonnegative(),
   scannedAt: timestampSchema,
+  /**
+   * True while a sweep is running right now. A full sweep of the universe takes
+   * minutes (rate limits are real), so the API NEVER runs one inside a request —
+   * it returns the latest completed sweep immediately and reports the running one
+   * here, so the UI can poll and flip when fresh numbers land.
+   */
+  inProgress: z.boolean().default(false),
 });
 export type ScanResult = z.infer<typeof scanResultSchema>;

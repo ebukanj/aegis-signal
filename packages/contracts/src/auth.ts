@@ -20,6 +20,8 @@ export const userSchema = z.object({
   email: z.email(),
   name: z.string(),
   role: userRoleSchema,
+  /** A suspended user cannot sign in; their sessions die on the next check. */
+  suspended: z.boolean().default(false),
   createdAt: timestampSchema,
 });
 export type User = z.infer<typeof userSchema>;

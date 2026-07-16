@@ -475,10 +475,18 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
   async prices(symbols: string[]): Promise<Record<string, number>> {
     const out: Record<string, number> = {};
 
-    for (const symbol of symbols) {
-      const ticker = await this.cache.getTicker("BINANCE", symbol);
-      if (ticker) out[symbol] = ticker.last;
-    }
+    /*
+     * In PARALLEL, and it matters: the cache may be a managed Redis a few hundred
+     * milliseconds away, and a serial loop over forty symbols turned one cheap
+     * lookup into a twelve-second response. One round-trip's latency, not forty.
+     */
+    const unique = [...new Set(symbols)];
+    await Promise.all(
+      unique.map(async (symbol) => {
+        const ticker = await this.cache.getTicker("BINANCE", symbol);
+        if (ticker) out[symbol] = ticker.last;
+      }),
+    );
 
     return out;
   }

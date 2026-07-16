@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { PrismaModule } from "../../core/database/prisma.module";
 import { AuthController } from "./auth.controller";
+import { AdminUsersController } from "./admin-users.controller";
 import { AuthService } from "./application/auth.service";
 import { WatchlistService } from "./application/watchlist.service";
 import { UserRepository } from "./infrastructure/user.repository";
@@ -25,7 +26,7 @@ import { RolesGuard } from "./guards/roles.guard";
  */
 @Module({
   imports: [PrismaModule],
-  controllers: [AuthController],
+  controllers: [AuthController, AdminUsersController],
   providers: [
     AuthService,
     WatchlistService,

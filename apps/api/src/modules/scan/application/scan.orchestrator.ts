@@ -96,22 +96,32 @@ export class ScanOrchestrator {
     const strategies = this.strategies.runnable();
     const out: SignalCandidate[] = [];
 
-    const results = await Promise.allSettled(
-      strategies.map((strategy) =>
-        this.evaluateOne({ strategy, symbol, exchange, candlesByTimeframe, btcByTimeframe, now }),
-      ),
-    );
-
-    results.forEach((result, i) => {
-      if (result.status === "fulfilled") {
-        if (result.value) out.push(result.value);
-        return;
+    /*
+     * SEQUENTIAL, with a yield between strategies — deliberately not
+     * Promise.allSettled. The heavy stages here (indicator maths, pattern
+     * detection) are synchronous CPU work; running them "in parallel" only
+     * queues the bursts back-to-back and starves the event loop, which reads
+     * as an API outage. One strategy, one breath, the next strategy.
+     */
+    for (const strategy of strategies) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      try {
+        const candidate = await this.evaluateOne({
+          strategy,
+          symbol,
+          exchange,
+          candlesByTimeframe,
+          btcByTimeframe,
+          now,
+        });
+        if (candidate) out.push(candidate);
+      } catch (error) {
+        this.logger.debug(
+          { strategy: strategy.id, symbol, err: error },
+          "A strategy could not be assembled for this symbol — skipped, not guessed",
+        );
       }
-      this.logger.debug(
-        { strategy: strategies[i].id, symbol, err: result.reason },
-        "A strategy could not be assembled for this symbol — skipped, not guessed",
-      );
-    });
+    }
 
     return out;
   }
@@ -310,20 +320,21 @@ export class ScanOrchestrator {
 
     // Patterns AND zones are wanted on every timeframe present — the risk engine
     // reads zones on the primary, and a strategy may key patterns off a higher one.
-    await Promise.all(
-      (Object.keys(candles) as Timeframe[]).map(async (timeframe) => {
-        try {
-          const set = await this.patterns.detect({
-            symbol,
-            candles: candles[timeframe]!,
-            timeframe,
-          });
-          out.set(timeframe, set);
-        } catch {
-          /* Too few candles for structure — the timeframe simply has no patterns. */
-        }
-      }),
-    );
+    // SEQUENTIAL with a breath between timeframes: detection is synchronous CPU
+    // work, and "parallel" here only queues the bursts back-to-back.
+    for (const timeframe of Object.keys(candles) as Timeframe[]) {
+      await new Promise((resolve) => setImmediate(resolve));
+      try {
+        const set = await this.patterns.detect({
+          symbol,
+          candles: candles[timeframe]!,
+          timeframe,
+        });
+        out.set(timeframe, set);
+      } catch {
+        /* Too few candles for structure — the timeframe simply has no patterns. */
+      }
+    }
 
     return out;
   }

@@ -3,8 +3,14 @@
 import { useSettingsStore, type SettingsCategory } from "../stores/settings-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, User, Palette, Sliders, Bell, Shield, Link, Key, Blocks, Eye, Accessibility, Info, UserCircle } from "lucide-react";
+import { Search, User, Palette, Sliders, Bell, Shield, Blocks } from "lucide-react";
 
+/**
+ * Every entry here is REAL. The tabs the page used to carry — API keys the
+ * platform never needs (it reads public data and never trades for you),
+ * OAuth "connected accounts" that never existed, invented privacy toggles —
+ * are deleted, not hidden.
+ */
 const navigationGroups = [
   {
     title: "Personal",
@@ -19,20 +25,9 @@ const navigationGroups = [
     title: "Security & Connections",
     items: [
       { id: "security", label: "Security", icon: Shield },
-      { id: "connected-accounts", label: "Connected Accounts", icon: Link },
-      { id: "api-keys", label: "API Keys", icon: Key },
       { id: "integrations", label: "Integrations", icon: Blocks },
     ]
   },
-  {
-    title: "System",
-    items: [
-      { id: "privacy", label: "Data & Privacy", icon: Eye },
-      { id: "accessibility", label: "Accessibility", icon: Accessibility },
-      { id: "about", label: "About Aegis", icon: Info },
-      { id: "account", label: "Account Management", icon: UserCircle },
-    ]
-  }
 ];
 
 export function SettingsSidebar() {

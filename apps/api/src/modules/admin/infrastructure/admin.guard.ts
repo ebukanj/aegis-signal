@@ -8,32 +8,44 @@ import {
 import { timingSafeEqual } from "node:crypto";
 import type { Request } from "express";
 import { AppConfigService } from "../../../config/app-config.service";
+import { TokenService } from "../../auth/domain/token.service";
 
 /**
  * The boundary on administrative actions.
  *
- * ── An interim boundary, and honest about it ──
+ * ── The role check the interim token promised (M16 delivered it) ──
  *
- * There is no user or auth system yet (that is a later milestone), so admin actions
- * are gated by a shared secret: the `X-Admin-Token` header must match
- * `ADMIN_API_TOKEN`. This is deliberately simple and deliberately NOT the end state
- * — when auth lands, this guard becomes a role check and the token is retired. But
- * "no auth yet" must never mean "anyone can flip a kill switch", so the boundary
- * exists now, in the weakest honest form.
+ * Real identity exists now, so the primary credential is a **signed-in ADMIN**: a
+ * valid bearer token whose role is ADMIN or SUPER_ADMIN passes. The shared
+ * `X-Admin-Token` secret remains as a secondary path for headless operators (CI,
+ * curl on the box, monitoring) — a role for humans, a token for machines.
  *
- * Two safety rails:
- *   - If no token is configured, admin MUTATIONS are refused outright in production
- *     (a blank secret is not a valid secret) — the platform fails closed.
- *   - The comparison is constant-time, so the token cannot be guessed by timing.
+ * Rails unchanged: with neither credential configured, production fails closed;
+ * development stays open so the console works locally; the token comparison is
+ * constant-time so it cannot be guessed by timing.
  */
 @Injectable()
 export class AdminGuard implements CanActivate {
   private readonly logger = new Logger(AdminGuard.name);
 
-  constructor(private readonly config: AppConfigService) {}
+  constructor(
+    private readonly config: AppConfigService,
+    private readonly tokens: TokenService,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
+
+    /* 1 · A signed-in platform ADMIN. The primary, human path. */
+    const bearer = request.headers.authorization;
+    if (bearer?.startsWith("Bearer ")) {
+      const claims = this.tokens.verify(bearer.slice("Bearer ".length).trim());
+      if (claims && (claims.role === "ADMIN" || claims.role === "SUPER_ADMIN")) {
+        return true;
+      }
+    }
+
+    /* 2 · The operator token. The machine path. */
     const expected = process.env.ADMIN_API_TOKEN ?? "";
 
     if (!expected) {
@@ -41,8 +53,8 @@ export class AdminGuard implements CanActivate {
        * say so loudly. */
       if (this.config.isProduction) {
         throw new ForbiddenException({
-          code: "ADMIN_NOT_CONFIGURED",
-          message: "ADMIN_API_TOKEN is not set — admin mutations are refused",
+          code: "ADMIN_FORBIDDEN",
+          message: "Admin access requires an ADMIN account or the operator token",
         });
       }
       this.logger.warn("ADMIN_API_TOKEN is not set — admin routes are OPEN in development only");
@@ -51,7 +63,10 @@ export class AdminGuard implements CanActivate {
 
     const provided = String(request.headers["x-admin-token"] ?? "");
     if (!provided || !constantTimeEqual(provided, expected)) {
-      throw new ForbiddenException({ code: "ADMIN_FORBIDDEN", message: "Invalid admin token" });
+      throw new ForbiddenException({
+        code: "ADMIN_FORBIDDEN",
+        message: "Admin access requires an ADMIN account or a valid operator token",
+      });
     }
     return true;
   }

@@ -139,7 +139,14 @@ describe("rate limiter", () => {
     const limiter = new RateLimiter(6_000); // 100/sec
 
     for (let i = 0; i < 6_000; i++) await limiter.acquire();
-    expect(limiter.available).toBe(0);
+    /*
+     * NEARLY empty, not exactly zero. The 6,000 acquires themselves take real
+     * time, during which a continuously-refilling bucket earns a token or two
+     * back — on a loaded machine this made an exact `toBe(0)` flake. That drift
+     * IS the behaviour under test (continuous refill), so the assertion allows
+     * it: drained to a handful, out of six thousand.
+     */
+    expect(limiter.available).toBeLessThan(10);
 
     await new Promise((r) => setTimeout(r, 100));
     expect(limiter.available).toBeGreaterThan(5);

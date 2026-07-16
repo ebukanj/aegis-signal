@@ -47,8 +47,9 @@ export function SignalCard({
       }}
       aria-label={`${signal.direction} ${signal.pair}, confidence ${signal.confidence}. Open details.`}
       className={cn(
-        "group cursor-pointer gap-4 p-5 transition-colors hover:border-primary/40 focus-visible:border-primary/60 focus-visible:outline-none",
-        signal.isPrime && "border-primary/30 bg-primary/[0.03]",
+        "group cursor-pointer gap-4 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 focus-visible:border-primary/60 focus-visible:outline-none",
+        signal.isPrime &&
+          "prime-signal border-primary/30 bg-gradient-to-br from-primary/[0.07] via-transparent to-transparent",
       )}
     >
       {/* Identity */}

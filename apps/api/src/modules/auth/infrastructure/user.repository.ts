@@ -47,6 +47,21 @@ export class UserRepository {
     return this.prisma.user.update({ where: { id }, data: { passwordHash } });
   }
 
+  /* ── Administration ──────────────────────────────────────────────── */
+
+  list(): Promise<PrismaUser[]> {
+    return this.prisma.user.findMany({ orderBy: { createdAt: "asc" } });
+  }
+
+  setSuspended(id: string, suspended: boolean): Promise<PrismaUser> {
+    return this.prisma.user.update({ where: { id }, data: { suspended } });
+  }
+
+  /** Hard delete. Preferences cascade; history keeps its author id as a string. */
+  async delete(id: string): Promise<void> {
+    await this.prisma.user.delete({ where: { id } });
+  }
+
   /* ── Preferences ─────────────────────────────────────────────────── */
 
   async getPreferences(userId: string): Promise<Prisma.JsonValue | null> {
