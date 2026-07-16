@@ -24,6 +24,8 @@ interface SweepDiagnostics {
   passed: number;
   durationMs: number;
   scannedAt: string;
+  /** WHY candidates died, grouped and counted — the evidence under a thin result. */
+  topRejections: { reason: string; count: number }[];
 }
 
 /**
@@ -76,6 +78,7 @@ export class ScanService {
           passed: 0,
           durationMs: 0,
           scannedAt: new Date().toISOString(),
+          topRejections: [],
         }
       );
     }
@@ -99,6 +102,7 @@ export class ScanService {
     const btcByTimeframe = await this.fetchCandles("BTC", "BINANCE", timeframes);
 
     const all: SignalCandidate[] = [];
+    const rejections = new Map<string, number>();
     let checked = 0;
 
     /*
@@ -132,6 +136,7 @@ export class ScanService {
             candlesByTimeframe,
             btcByTimeframe,
             now,
+            onReject: (reason) => rejections.set(reason, (rejections.get(reason) ?? 0) + 1),
           });
           all.push(...candidates);
         } catch (error) {
@@ -156,6 +161,10 @@ export class ScanService {
       passed: all.length,
       durationMs: Date.now() - started,
       scannedAt: new Date().toISOString(),
+      topRejections: [...rejections.entries()]
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 8)
+        .map(([reason, count]) => ({ reason, count })),
     };
 
     this.last = diagnostics;
@@ -163,6 +172,14 @@ export class ScanService {
     this.logger.log(
       `Scan: ${checked} pairs checked · ${all.length} passed · ${diagnostics.durationMs}ms`,
     );
+
+    if (all.length === 0 && diagnostics.topRejections.length > 0) {
+      const top = diagnostics.topRejections
+        .slice(0, 4)
+        .map((r) => `${r.count}× ${r.reason}`)
+        .join(" | ");
+      this.logger.log(`Why nothing passed: ${top}`);
+    }
 
     return diagnostics;
   }
@@ -236,6 +253,7 @@ export class ScanService {
       durationMs: diagnostics?.durationMs ?? 0,
       scannedAt: diagnostics?.scannedAt ?? new Date().toISOString(),
       inProgress: this.sweeping,
+      topRejections: diagnostics?.topRejections ?? [],
     };
   }
 

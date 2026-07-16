@@ -139,5 +139,13 @@ export const scanResultSchema = z.object({
    * here, so the UI can poll and flip when fresh numbers land.
    */
   inProgress: z.boolean().default(false),
+
+  /**
+   * WHY candidates died, grouped and counted — the evidence under a thin result.
+   * A zero with reasons ("no break of structure × 214") is the strategies being
+   * selective; a zero without them is indistinguishable from a broken pipeline,
+   * and a trader who cannot tell the difference stops trusting the quiet days.
+   */
+  topRejections: z.array(z.object({ reason: z.string(), count: z.number().int() })).default([]),
 });
 export type ScanResult = z.infer<typeof scanResultSchema>;

@@ -52,6 +52,10 @@ export class SettlementWorker {
     this.running = true;
     try {
       await this.settleOpen();
+      /* The freshness backstop: any open signal past its own expiry is a zombie
+       * (its ledger entry settled in an earlier era, or never existed) and leaves
+       * the feed here — the settlement path above cannot see it. */
+      await this.signals.expireStale();
     } catch (error) {
       this.logger.error({ err: error }, "Settlement sweep failed");
     } finally {

@@ -129,6 +129,7 @@ export interface AdminDashboardMetrics {
   signalsToday: number;
   runningStrategies: number;
   onlineExchanges: number;
+  totalExchanges: number;
   apiHealthScore: number;
   systemUptimeSeconds: number;
   memoryUsagePct: number;

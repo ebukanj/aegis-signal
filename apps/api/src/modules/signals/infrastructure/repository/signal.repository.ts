@@ -58,6 +58,27 @@ export class SignalRepository {
     return row ? fromRow(row) : null;
   }
 
+  /**
+   * Open signals whose own freshness window has closed — `expiresAt` in the past.
+   *
+   * These should not exist for long: the settlement worker resolves live trades
+   * well before expiry. The ones this catches are ORPHANS — signals whose ledger
+   * entry was settled in an earlier era (or never written), so the settlement
+   * sweep no longer sees them and their rows sit ACTIVE forever, filling the feed
+   * with entries priced for a market that no longer exists. Exactly that happened
+   * with the pre-M15 backfill corpus.
+   */
+  async expiredOpen(now: number): Promise<PublishedSignal[]> {
+    const rows = await this.prisma.signal.findMany({
+      where: {
+        status: { in: ["ACTIVE", "TRIGGERED"] },
+        expiresAt: { lt: BigInt(now) },
+      },
+      orderBy: { publishedAt: "asc" },
+    });
+    return rows.map(fromRow);
+  }
+
   /** Recently published signals — the dedup set and the "active feed". */
   async recent(input: {
     since: number;

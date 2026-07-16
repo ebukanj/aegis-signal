@@ -90,6 +90,13 @@ export class ScanOrchestrator {
     candlesByTimeframe: Partial<Record<Timeframe, readonly Candle[]>>;
     btcByTimeframe: Partial<Record<Timeframe, readonly Candle[]>>;
     now: number;
+    /**
+     * Receives every rejection, normalised ("RSI is N, needs > N") so identical
+     * failures group. A zero-candidate sweep must be able to say WHY — a silent
+     * zero is indistinguishable from a broken pipeline (the replay learned this
+     * the hard way), and the scanner shows these reasons under a thin result.
+     */
+    onReject?: (reason: string) => void;
   }): Promise<SignalCandidate[]> {
     const { symbol, exchange, candlesByTimeframe, btcByTimeframe, now } = input;
 
@@ -113,6 +120,7 @@ export class ScanOrchestrator {
           candlesByTimeframe,
           btcByTimeframe,
           now,
+          onReject: input.onReject,
         });
         if (candidate) out.push(candidate);
       } catch (error) {
@@ -135,6 +143,7 @@ export class ScanOrchestrator {
     candlesByTimeframe: Partial<Record<Timeframe, readonly Candle[]>>;
     btcByTimeframe: Partial<Record<Timeframe, readonly Candle[]>>;
     now: number;
+    onReject?: (reason: string) => void;
   }): Promise<SignalCandidate | null> {
     const { strategy, symbol, exchange, candlesByTimeframe, btcByTimeframe, now } = input;
     const primary = strategy.timeframe;
@@ -177,7 +186,10 @@ export class ScanOrchestrator {
       bar,
     });
 
-    if (result.kind !== "candidate") return null;
+    if (result.kind !== "candidate") {
+      input.onReject?.(`${strategy.id}: ${normaliseReason(result.reason ?? "conditions not met")}`);
+      return null;
+    }
 
     const candidate = result.candidate;
     const primaryCandles = candles[primary]!;
@@ -223,7 +235,12 @@ export class ScanOrchestrator {
       now,
     });
 
-    if (!decision.approved || !decision.assessment) return null;
+    if (!decision.approved || !decision.assessment) {
+      input.onReject?.(
+        `${strategy.id}: [risk:${decision.gate ?? "?"}] ${normaliseReason(decision.reason ?? "vetoed")}`,
+      );
+      return null;
+    }
 
     /* ── Confidence — the SAME engine, its full report ─────────────── */
 
@@ -377,6 +394,11 @@ export class ScanOrchestrator {
       return null;
     }
   }
+}
+
+/** Collapse numbers out of a reason so "RSI = 41.2" and "RSI = 38.7" group. */
+function normaliseReason(reason: string): string {
+  return reason.replace(/-?\d+(\.\d+)?/g, "N").slice(0, 120);
 }
 
 /* ── Buckets — ported from the confidence replay so live and history agree ── */

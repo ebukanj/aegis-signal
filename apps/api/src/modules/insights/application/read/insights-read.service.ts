@@ -9,6 +9,7 @@ import {
 } from "@aegis/contracts";
 import { InsightsService } from "../services/insights.service";
 import { InsightRepository } from "../../infrastructure/repository/insight.repository";
+import { SocialCollector } from "../social/social.collector";
 
 /**
  * The read side — the shapes the frontend Insights page already speaks.
@@ -25,6 +26,7 @@ export class InsightsReadService {
   constructor(
     private readonly insights: InsightsService,
     private readonly repository: InsightRepository,
+    private readonly social: SocialCollector,
   ) {}
 
   /** The Insights page feed: real news + real risk flags; social/fundamentals empty. */
@@ -46,8 +48,9 @@ export class InsightsReadService {
         model: "deterministic",
       },
       news: recent.map(toNewsItem),
-      /* Architecture-only this milestone — no live source. Empty, not faked. */
-      social: [],
+      /* LIVE — measured from Reddit's public feeds (see SocialCollector). Empty
+       * means genuinely quiet, or Reddit dark — never faked either way. */
+      social: this.social.current(),
       fundamentals: [],
     };
   }

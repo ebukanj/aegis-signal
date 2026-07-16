@@ -67,6 +67,48 @@ export function TrackRecordPage() {
         </Card>
       )}
 
+      {/* The verdict, in one honest sentence — before any chart asks to be read. */}
+      {!noOutcomes && data.expectancy !== null && (
+        <Card
+          className={cn(
+            "gap-1.5 p-5",
+            data.expectancy >= 0
+              ? "border-success/30 bg-success/[0.04]"
+              : "border-destructive/30 bg-destructive/[0.04]",
+          )}
+        >
+          <p className="label-caps">The verdict so far</p>
+          <p className="max-w-3xl text-sm leading-relaxed">
+            <span className="font-semibold">
+              {data.settledSignals} trades settled · {data.wins} won (
+              {Math.round((data.wins / data.settledSignals) * 100)}%).
+            </span>{" "}
+            {data.expectancy >= 0 ? (
+              <>
+                On average each trade made{" "}
+                <span className="font-numeric font-semibold text-success">
+                  +{data.expectancy}R
+                </span>{" "}
+                — the rules are earning their keep. R is the amount risked per
+                trade: at 1% risk, +{data.expectancy}R means +
+                {Math.round(data.expectancy * 100) / 100}% of equity per signal, on
+                average.
+              </>
+            ) : (
+              <>
+                On average each trade lost{" "}
+                <span className="font-numeric font-semibold text-destructive">
+                  {data.expectancy}R
+                </span>{" "}
+                — the rules as written are losing money, and this page exists to
+                say so plainly. No signal here is worth taking until this number
+                turns positive; that honesty is the product.
+              </>
+            )}
+          </p>
+        </Card>
+      )}
+
       {/* The four numbers that matter */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Signals sent" value={data.settledSignals} />

@@ -37,9 +37,10 @@ export function SocialFeed({ social }: { social: SocialSignal[] }) {
       {social.length === 0 && (
         <Card className="p-4">
           <p className="text-sm text-muted-foreground">
-            Social intelligence is not live yet — its collectors arrive in a later
-            milestone. Rather than show invented chatter, the platform shows nothing
-            here. Real news and risk flags above are live.
+            <span className="font-medium text-foreground">Quiet right now.</span>{" "}
+            The platform scans Reddit&apos;s crypto communities every half hour;
+            a coin enters this feed only when a real conversation forms (3+
+            posts). Silence here is measured, never papered over.
           </p>
         </Card>
       )}

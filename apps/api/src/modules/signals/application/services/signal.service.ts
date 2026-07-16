@@ -214,6 +214,50 @@ export class SignalService implements OnModuleInit {
     return this.repository.recent({ since, statuses: ["ACTIVE", "TRIGGERED"], limit: 200 });
   }
 
+  /**
+   * The freshness backstop: expire any OPEN signal whose own `expiresAt` has
+   * passed. Returns how many were expired.
+   *
+   * ── Why this exists when the settlement worker already settles trades ──
+   *
+   * The settlement worker only sees signals with an OPEN LEDGER ENTRY. A signal
+   * whose entry was settled in an earlier era — or never written — is invisible to
+   * it, and its row sits ACTIVE forever: a zombie, showing a trader an entry priced
+   * for a market that no longer exists. The pre-M15 backfill left exactly 48 of
+   * these. "A signal never outlives its conditions" is this engine's own rule
+   * (M10 freshness), so this engine enforces it at the row level too: past expiry
+   * + still open → EXPIRED, every sweep, no exceptions, no matter how the signal
+   * got orphaned.
+   */
+  async expireStale(now = Date.now()): Promise<number> {
+    const stale = await this.repository.expiredOpen(now);
+    let expired = 0;
+
+    for (const signal of stale) {
+      try {
+        await this.advance(
+          signal.id,
+          "EXPIRED",
+          "freshness window closed — the setup's conditions no longer exist",
+          now,
+        );
+        expired += 1;
+      } catch (error) {
+        this.logger.warn(
+          { signalId: signal.id, err: error },
+          "Could not expire a stale signal — will retry next sweep",
+        );
+      }
+    }
+
+    if (expired > 0) {
+      this.logger.log(`Expired ${expired} stale signal(s) past their freshness window`);
+      this.events.emit("signals.changed", { expired });
+    }
+
+    return expired;
+  }
+
   /* ── Administration ────────────────────────────────────────────── */
 
   async metrics(): Promise<Record<string, unknown>> {

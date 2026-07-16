@@ -11,6 +11,7 @@ import { DeduplicationEngine } from "./application/deduplication/deduplication.e
 import { RiskFlagGenerator } from "./application/risk-flags/risk-flag.generator";
 import { InsightsService } from "./application/services/insights.service";
 import { InsightsReadService } from "./application/read/insights-read.service";
+import { SocialCollector } from "./application/social/social.collector";
 import { InsightRepository } from "./infrastructure/repository/insight.repository";
 import { InsightsController } from "./insights.controller";
 
@@ -35,6 +36,7 @@ import { InsightsController } from "./insights.controller";
   imports: [PrismaModule],
   controllers: [InsightsController],
   providers: [
+    SocialCollector,
     EntityExtractor,
     ClassificationEngine,
     CollectorRegistry,

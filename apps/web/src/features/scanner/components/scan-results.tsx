@@ -82,6 +82,31 @@ export function ScanResults({
                 now. Not trading is a position — the platform keeps scanning,
                 and a real setup will appear here the moment one exists.
               </p>
+
+              {result.topRejections.length > 0 && (
+                <div className="mt-2 w-full max-w-lg text-left">
+                  <p className="label-caps mb-2 text-center">
+                    Why the market said no
+                  </p>
+                  <ul className="space-y-1.5">
+                    {result.topRejections.slice(0, 5).map((r) => (
+                      <li
+                        key={r.reason}
+                        className="flex items-baseline gap-2 rounded-md border bg-card/50 px-3 py-1.5 text-xs"
+                      >
+                        <span className="font-numeric shrink-0 text-muted-foreground">
+                          {r.count}×
+                        </span>
+                        <span className="min-w-0 text-muted-foreground">{r.reason}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                    Real reasons from the live pipeline — this is the evidence
+                    that a quiet day is selectivity, not a broken feed.
+                  </p>
+                </div>
+              )}
             </>
           )}
         </Card>

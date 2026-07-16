@@ -127,6 +127,7 @@ export function toDashboardMetrics(overview: AdminOverviewDto): AdminDashboardMe
     signalsToday: num(overview, "ledger", "totalSignals"),
     runningStrategies: 0, // Strategy administration is not exposed yet.
     onlineExchanges: overview.exchanges.filter((e) => e.connected).length,
+    totalExchanges: overview.exchanges.length,
     apiHealthScore: healthScore,
     systemUptimeSeconds: overview.system.uptimeSeconds,
     memoryUsagePct: Math.round(overview.system.memory.systemUsedPercent),
