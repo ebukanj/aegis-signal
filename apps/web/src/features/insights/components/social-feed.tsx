@@ -37,10 +37,11 @@ export function SocialFeed({ social }: { social: SocialSignal[] }) {
       {social.length === 0 && (
         <Card className="p-4">
           <p className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">Quiet right now.</span>{" "}
-            The platform scans Reddit&apos;s crypto communities every half hour;
-            a coin enters this feed only when a real conversation forms (3+
-            posts). Silence here is measured, never papered over.
+            <span className="font-medium text-foreground">Nothing to show.</span>{" "}
+            The platform polls Reddit&apos;s crypto communities every half hour; a
+            coin enters this feed only when a real conversation forms (3+ posts).
+            When the source is quiet — or unreachable from this network — this
+            stays empty rather than inventing chatter.
           </p>
         </Card>
       )}

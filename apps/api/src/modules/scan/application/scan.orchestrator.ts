@@ -311,7 +311,7 @@ export class ScanOrchestrator {
     await Promise.all(
       [...byTimeframe.entries()].map(async ([timeframe, wanted]) => {
         if (!candles[timeframe]) return;
-        const { series } = await this.indicators.calculateMany({
+        const { series, failed } = await this.indicators.calculateMany({
           symbol,
           candles: candles[timeframe]!,
           timeframe,
@@ -322,6 +322,20 @@ export class ScanOrchestrator {
         });
         for (const [key, value] of Object.entries(series)) {
           out[key] = value.values.map((v) => v.value);
+        }
+
+        /*
+         * A failed indicator must be LOUD. The evaluator will report the condition
+         * as "could not evaluate", which looks like the market saying no — but a
+         * strategy blind for want of an EMA is a broken feed, not selectivity, and
+         * the two must never be filed together. This names WHICH indicator and WHY,
+         * so a sweep-wide failure is diagnosable from one log line.
+         */
+        if (Object.keys(failed).length > 0) {
+          this.logger.warn(
+            { symbol, timeframe, failed },
+            "Indicators a strategy asked for could not be computed — its conditions will report UNAVAILABLE",
+          );
         }
       }),
     );
