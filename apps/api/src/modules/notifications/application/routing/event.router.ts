@@ -143,6 +143,18 @@ export class EventRouter {
     });
   }
 
+  @OnEvent("macro.event.imminent")
+  async onMacroImminent(event: { title: string; minutesUntil: number; impact: string }): Promise<void> {
+    await this.dispatch({
+      type: "SYSTEM_ANNOUNCEMENT",
+      message: this.templates.macroImminent(event.title, event.minutesUntil),
+      /* One warning per event per hour — bucket so a minute-by-minute check cannot
+       * spam even if it somehow fired twice. */
+      dedupeKey: `macro:${event.title}:${Math.floor(Date.now() / 3_600_000)}`,
+      subject: null,
+    });
+  }
+
   @OnEvent("exchange.disconnected")
   async onExchangeDown(event: { exchange: string }): Promise<void> {
     await this.dispatch({

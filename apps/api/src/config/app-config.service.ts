@@ -92,6 +92,12 @@ export class AppConfigService {
     };
   }
 
+  /* ── Macro / economic calendar (M19) ─────────────────────────────── */
+
+  get macro() {
+    return { calendarApiKey: this.get("ECONOMIC_CALENDAR_API_KEY") };
+  }
+
   /* ── Identity & access (M16) ─────────────────────────────────────── */
 
   get auth() {

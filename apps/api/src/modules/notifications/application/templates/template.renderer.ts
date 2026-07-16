@@ -120,6 +120,18 @@ export class TemplateRenderer {
     };
   }
 
+  macroImminent(eventTitle: string, minutesUntil: number): RenderedMessage {
+    const title = `⚠️ ${eventTitle} in ~${minutesUntil} min`;
+    const body =
+      "High-impact macro release imminent — expect volatility. Consider standing down or sizing down; stops get hit on noise around the print.";
+    return {
+      title,
+      markdown: `*${escape(title)}*\n${body}`,
+      plain: `${title}\n${body}`,
+      link: null,
+    };
+  }
+
   system(headline: string, detail: string): RenderedMessage {
     return {
       title: headline,

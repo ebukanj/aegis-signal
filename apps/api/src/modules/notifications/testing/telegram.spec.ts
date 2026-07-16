@@ -7,7 +7,11 @@ import type { AuthService } from "../../auth/application/auth.service";
 import type { TelegramClient } from "../infrastructure/telegram/telegram.client";
 import type { AppConfigService } from "../../../config/app-config.service";
 
-function prefs(over: Partial<UserPreferences> & { notifications?: Partial<UserPreferences["notifications"]> }): UserPreferences {
+function prefs(
+  over: Omit<Partial<UserPreferences>, "notifications"> & {
+    notifications?: Partial<UserPreferences["notifications"]>;
+  },
+): UserPreferences {
   return userPreferencesSchema.parse({
     ...over,
     notifications: { ...over.notifications },

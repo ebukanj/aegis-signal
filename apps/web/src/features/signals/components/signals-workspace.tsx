@@ -10,6 +10,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { useTodaysSignals } from "@/features/signals/hooks/use-todays-signals";
 import { MarketContextStrip } from "@/features/signals/components/market-context-strip";
+import { MacroWindowBanner } from "@/features/macro/components/macro-window-banner";
 import { WatchlistCard } from "@/features/watchlist/components/watchlist-card";
 import { NoSignals } from "@/features/signals/components/no-signals";
 import { SignalCard } from "@/features/signals/components/signal-card";
@@ -53,6 +54,8 @@ export function SignalsWorkspace() {
       />
 
       <MarketContextStrip context={context} primeCount={prime.length} />
+
+      <MacroWindowBanner />
 
       <WatchlistCard />
 

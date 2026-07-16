@@ -11,6 +11,7 @@ import { MarketSummaryCard } from "@/features/insights/components/market-summary
 import { NewsFeed } from "@/features/insights/components/news-feed";
 import { RiskFlags } from "@/features/insights/components/risk-flags";
 import { SocialFeed } from "@/features/insights/components/social-feed";
+import { EconomicCalendar } from "@/features/macro/components/economic-calendar";
 
 /**
  * Insights — news, social, fundamentals.
@@ -78,6 +79,9 @@ export function InsightsPage() {
         <>
           <RiskFlags flags={data.riskFlags} />
           <MarketSummaryCard summary={data.summary} />
+
+          {/* Macro — the scheduled events that move everything at once. Live. */}
+          <EconomicCalendar />
 
           <div className="grid gap-6 xl:grid-cols-2">
             <NewsFeed news={data.news} />

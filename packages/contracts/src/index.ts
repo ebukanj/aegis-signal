@@ -79,3 +79,6 @@ export * from "./admin";
 
 /* ── Identity & access ─────────────────────────────────────────────── */
 export * from "./auth";
+
+/* ── Macro & the economic calendar ─────────────────────────────────── */
+export * from "./macro";

@@ -134,6 +134,13 @@ export const envSchema = z
     TELEGRAM_BOT_TOKEN: z.string().optional(),
     TELEGRAM_BOT_USERNAME: z.string().optional(),
     WHATSAPP_TOKEN: z.string().optional(),
+    /**
+     * Financial Modeling Prep API key for the live economic calendar (CPI, NFP,
+     * PCE, rate decisions with forecasts + actuals). Optional — without it the
+     * platform runs on the built-in FOMC schedule alone. Free tier at
+     * financialmodelingprep.com.
+     */
+    ECONOMIC_CALENDAR_API_KEY: z.string().optional(),
     OPENAI_API_KEY: z.string().optional(),
     ANTHROPIC_API_KEY: z.string().optional(),
     GOOGLE_API_KEY: z.string().optional(),

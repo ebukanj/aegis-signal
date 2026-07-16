@@ -22,6 +22,7 @@ import { SignalModule } from "./modules/signals/signal.module";
 import { ScanModule } from "./modules/scan/scan.module";
 import { LedgerModule } from "./modules/ledger/ledger.module";
 import { InsightsModule } from "./modules/insights/insights.module";
+import { MacroModule } from "./modules/macro/macro.module";
 import { NotificationModule } from "./modules/notifications/notification.module";
 import { AdminModule } from "./modules/admin/admin.module";
 
@@ -121,6 +122,7 @@ import { AdminModule } from "./modules/admin/admin.module";
     ScanModule,
     LedgerModule,
     InsightsModule,
+    MacroModule,
     NotificationModule,
 
     /*
