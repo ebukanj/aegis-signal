@@ -1,0 +1,41 @@
+# The Docker build context is the repo root (docker-compose `context: .`), so this
+# is the .dockerignore that actually applies. Without it, `COPY . .` in the build
+# stage ships the host's node_modules and .git into the image — slow, and a source
+# of "works on my machine" drift when a host-built native module overwrites the one
+# the image installed for its own platform.
+
+# Dependencies — reinstalled inside the image for the image's own platform.
+node_modules
+**/node_modules
+
+# Build output — rebuilt in the image.
+dist
+**/dist
+.next
+**/.next
+build
+**/build
+
+# Version control and CI.
+.git
+.github
+
+# Secrets and local env — NEVER in an image.
+.env
+.env.*
+!.env.example
+
+# Logs, coverage, caches.
+*.log
+coverage
+**/coverage
+.turbo
+.cache
+
+# Editor / OS noise.
+.vscode
+.idea
+.DS_Store
+
+# Docs and local-only tooling don't belong in a runtime image.
+# (The API build only needs source, prisma, and the contracts package.)

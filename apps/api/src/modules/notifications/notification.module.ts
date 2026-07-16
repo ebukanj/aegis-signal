@@ -57,6 +57,6 @@ import { NotificationController } from "./notification.controller";
     NotificationReadService,
     NotificationGateway,
   ],
-  exports: [NotificationOrchestrator],
+  exports: [NotificationOrchestrator, NotificationReadService],
 })
 export class NotificationModule {}

@@ -421,3 +421,47 @@ model Notification {
   @@index([type])
   @@index([createdAt])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Milestone 14 — Administration & Observability.
+//
+// No business logic. Operational state: an immutable audit trail of admin actions,
+// and a key-value store for runtime settings (feature flags, maintenance mode) that
+// change WITHOUT a deployment.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Every administrative action, appended and IMMUTABLE.
+///
+/// The record of who did what, when — a feature flag flipped, maintenance mode
+/// enabled, a strategy disabled by an operator. Append-only: a correction is a new
+/// row, never an edit, because an audit trail you can rewrite is not an audit trail.
+model AdminAudit {
+  id String @id @default(cuid())
+
+  /// The action, e.g. "feature-flag.set", "maintenance.enable".
+  action String
+  /// Who did it. A user id when auth exists; the admin-token principal until then.
+  actor  String
+  /// What changed, in words, with the before/after where it applies.
+  detail String
+  /// Structured context (the flag name, the old and new value).
+  metadata Json?
+
+  at        BigInt
+  createdAt DateTime @default(now())
+
+  @@index([action])
+  @@index([at])
+}
+
+/// Runtime operational settings — feature flags and maintenance state.
+///
+/// A key-value store so a flag can be flipped or maintenance declared at runtime,
+/// with no deployment. `value` is JSON so a flag can carry a rollout percentage or a
+/// maintenance message, not just a boolean.
+model AdminSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+  updatedBy String
+}

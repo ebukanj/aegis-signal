@@ -2,21 +2,32 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Plus, MoreHorizontal } from "lucide-react";
 import type { FeatureFlag } from "../types";
 
-export function FeatureFlags({ flags }: { flags: FeatureFlag[] }) {
+/**
+ * Feature flags — LIVE and interactive. Each switch flips a real runtime flag on the
+ * backend (kill switches and rollouts); the change is persisted and audited, and the
+ * platform obeys it on the next request. `onToggle` and `pending` are supplied by the
+ * workspace, which owns the mutation.
+ */
+export function FeatureFlags({
+  flags,
+  onToggle,
+  pendingKey,
+}: {
+  flags: FeatureFlag[];
+  onToggle?: (key: string, enabled: boolean) => void;
+  pendingKey?: string | null;
+}) {
   return (
     <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold tracking-tight">Feature Flags</h2>
-          <p className="text-muted-foreground text-sm mt-1">Manage gradual rollouts and kill switches.</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            Runtime kill switches and rollouts — changes take effect immediately, no deploy.
+          </p>
         </div>
-        <Button className="gap-2">
-          <Plus className="size-4" /> Create Flag
-        </Button>
       </div>
 
       <Card>
@@ -28,7 +39,6 @@ export function FeatureFlags({ flags }: { flags: FeatureFlag[] }) {
               <TableHead>Rollout %</TableHead>
               <TableHead>Created</TableHead>
               <TableHead className="text-right">Enabled</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -65,12 +75,11 @@ export function FeatureFlags({ flags }: { flags: FeatureFlag[] }) {
                   {new Date(flag.createdAt * 1000).toLocaleDateString()}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Switch checked={flag.enabled} />
-                </TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="size-4" />
-                  </Button>
+                  <Switch
+                    checked={flag.enabled}
+                    disabled={!onToggle || pendingKey === flag.id}
+                    onCheckedChange={(checked) => onToggle?.(flag.id, checked)}
+                  />
                 </TableCell>
               </TableRow>
             ))}

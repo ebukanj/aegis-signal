@@ -157,6 +157,29 @@ export class AllExceptionsFilter implements ExceptionFilter {
       };
     }
 
+    /*
+     * Body-parser errors arrive as plain Errors carrying an HTTP status, not as
+     * HttpExceptions — an oversized payload (413) or malformed JSON (400) is the
+     * client's doing, and calling it a 500 would both blame us and hide a real
+     * signal (someone is posting megabytes at a 256kb endpoint). Honour a client
+     * status when the error declares one; never trust a 5xx it claims, since that
+     * path is exactly where a leaked internal message would ride out.
+     */
+    const declared = statusOf(exception);
+    if (declared !== undefined && declared >= 400 && declared < 500) {
+      return {
+        status: declared,
+        code: this.codeForStatus(declared),
+        message:
+          declared === HttpStatus.PAYLOAD_TOO_LARGE
+            ? "The request body is too large."
+            : declared === HttpStatus.BAD_REQUEST
+              ? "The request body could not be parsed."
+              : "The request could not be processed.",
+        isOurFault: false,
+      };
+    }
+
     /* Anything else is a bug we have not met yet. */
     return {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -208,10 +231,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
       403: "FORBIDDEN",
       404: "NOT_FOUND",
       409: "CONFLICT",
+      413: "PAYLOAD_TOO_LARGE",
       422: "RULE_VIOLATION",
       429: "RATE_LIMITED",
       503: "UNAVAILABLE",
     };
     return map[status] ?? "INTERNAL_ERROR";
   }
+}
+
+/** The HTTP status an error declares, if any (body-parser sets one; most don't). */
+function statusOf(exception: unknown): number | undefined {
+  if (typeof exception !== "object" || exception === null) return undefined;
+  const e = exception as { status?: unknown; statusCode?: unknown };
+  const raw = typeof e.status === "number" ? e.status : e.statusCode;
+  return typeof raw === "number" ? raw : undefined;
 }

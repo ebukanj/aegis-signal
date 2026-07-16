@@ -87,6 +87,19 @@ export const envSchema = z
     OPENAI_API_KEY: z.string().optional(),
     ANTHROPIC_API_KEY: z.string().optional(),
     GOOGLE_API_KEY: z.string().optional(),
+
+    /* ── Administration & Observability ────────────────────────────── */
+    // The shared secret that gates the admin API. Read directly by AdminGuard,
+    // which fails closed in production if it is unset — so admin mutations are
+    // refused rather than silently open. Optional here because a deploy without an
+    // operator console is valid; the guard, not the schema, enforces the boundary.
+    ADMIN_API_TOKEN: z.string().optional(),
+    // Stamped into /health/info and the admin build panel so an operator can tell
+    // exactly which commit is running. Injected by CI/Coolify at build time.
+    GIT_COMMIT: z.string().optional(),
+    // Hardening limits, overridable per-environment (see bootstrap.ts).
+    HTTP_BODY_LIMIT: z.string().optional(),
+    HTTP_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
   })
   /**
    * Production tightens the screws.
@@ -112,6 +125,22 @@ export const envSchema = z
         code: "custom",
         path: ["APP_URL"],
         message: "APP_URL cannot point at localhost in production",
+      });
+    }
+
+    /*
+     * A production deploy with an unguarded admin surface is not a valid state. The
+     * guard already fails closed at request time, but catching it at boot turns a
+     * silent "admin does nothing" into a loud "fix your config" — the cheaper place
+     * to learn it. A blank token is not a token.
+     */
+    if (!env.ADMIN_API_TOKEN || env.ADMIN_API_TOKEN.length < 24) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["ADMIN_API_TOKEN"],
+        message:
+          "ADMIN_API_TOKEN must be set to a strong secret (24+ chars) in production — " +
+          "the admin API is refused without it.",
       });
     }
 

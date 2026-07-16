@@ -21,6 +21,7 @@ import { SignalModule } from "./modules/signals/signal.module";
 import { LedgerModule } from "./modules/ledger/ledger.module";
 import { InsightsModule } from "./modules/insights/insights.module";
 import { NotificationModule } from "./modules/notifications/notification.module";
+import { AdminModule } from "./modules/admin/admin.module";
 
 /**
  * The application.
@@ -117,6 +118,15 @@ import { NotificationModule } from "./modules/notifications/notification.module"
     LedgerModule,
     InsightsModule,
     NotificationModule,
+
+    /*
+     * Administration & Observability sits ABOVE the pipeline: it reads every
+     * module's health and metrics, runs the operator's levers (feature flags,
+     * maintenance mode), and exposes /metrics. It depends on the modules; none of
+     * them depend on it. It is last on purpose — it can only observe what already
+     * exists.
+     */
+    AdminModule,
 
     /*
      * Still to come, in pipeline order:

@@ -73,3 +73,6 @@ export * from "./api/websocket";
 
 /* ── Dashboard view models ─────────────────────────────────────────── */
 export * from "./dashboard";
+
+/* ── Administration & Observability ────────────────────────────────── */
+export * from "./admin";

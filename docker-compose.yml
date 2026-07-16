@@ -67,6 +67,9 @@ services:
       REDIS_URL: redis://redis:6379
       # Compose-only. Production secrets come from Coolify, never from a file.
       JWT_SECRET: compose-only-not-a-production-secret-32-chars-min
+      # The admin API is required in production; this compose value is a placeholder
+      # so the container boots locally. Coolify injects the real secret.
+      ADMIN_API_TOKEN: compose-only-admin-token-not-for-production-use
       LOG_LEVEL: info
     ports:
       - "4000:4000"

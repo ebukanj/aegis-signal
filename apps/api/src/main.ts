@@ -17,6 +17,9 @@ async function bootstrap(): Promise<void> {
     // Buffer until Pino is attached, so the first few lines are not lost to
     // Nest's default console logger.
     bufferLogs: true,
+    // We register the body parsers ourselves in configureApp so the payload-size
+    // limit is ours, not Nest's silent 100kb default.
+    bodyParser: false,
   });
 
   configureApp(app);

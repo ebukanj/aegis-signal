@@ -77,12 +77,25 @@ describe("environment validation", () => {
     ).toThrow(/localhost/i);
   });
 
+  it("REFUSES an unguarded admin surface in production", () => {
+    expect(() =>
+      validateEnv({
+        ...valid,
+        NODE_ENV: "production",
+        APP_URL: "https://api.aegis-signal.io",
+        JWT_SECRET: "Zq4vN8pR2tL6wX9cB3mK7hJ5dF1gS0yA4eU8iO2nP6rT",
+        // ADMIN_API_TOKEN deliberately absent.
+      }),
+    ).toThrow(/ADMIN_API_TOKEN/);
+  });
+
   it("allows a real production environment", () => {
     const env = validateEnv({
       ...valid,
       NODE_ENV: "production",
       APP_URL: "https://api.aegis-signal.io",
       JWT_SECRET: "Zq4vN8pR2tL6wX9cB3mK7hJ5dF1gS0yA4eU8iO2nP6rT",
+      ADMIN_API_TOKEN: "kM3pQ9vX2rT6wZ1cB8nJ5hF0dS4gL7yA",
     });
     expect(env.NODE_ENV).toBe("production");
   });

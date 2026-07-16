@@ -33,6 +33,7 @@
     "bullmq": "^5.58.5",
     "ccxt": "^4.5.9",
     "compression": "^1.8.1",
+    "express": "^5.2.1",
     "helmet": "^8.1.0",
     "ioredis": "^5.7.0",
     "nestjs-pino": "^4.4.0",
