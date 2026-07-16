@@ -17,6 +17,7 @@ import { RegimeModule } from "./modules/regime/regime.module";
 import { StrategyModule } from "./modules/strategy/strategy.module";
 import { RiskModule } from "./modules/risk/risk.module";
 import { ConfidenceModule } from "./modules/confidence/confidence.module";
+import { AuthModule } from "./modules/auth/auth.module";
 import { SignalModule } from "./modules/signals/signal.module";
 import { ScanModule } from "./modules/scan/scan.module";
 import { LedgerModule } from "./modules/ledger/ledger.module";
@@ -115,6 +116,7 @@ import { AdminModule } from "./modules/admin/admin.module";
      */
     RiskModule,
     ConfidenceModule,
+    AuthModule,
     SignalModule,
     ScanModule,
     LedgerModule,

@@ -465,3 +465,57 @@ model AdminSetting {
   updatedAt DateTime @updatedAt
   updatedBy String
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Milestone 16 — Identity. Who is asking, and what are they allowed to do.
+//
+// The platform decided everything about the MARKET before it knew a single thing
+// about its USERS — deliberately (M01 built the platform, not the product). This
+// is where a person becomes real: an account, a role, and preferences that belong
+// to THEM, not to the browser.
+//
+// Passwords are never stored. Only a scrypt hash + per-user salt, verified in
+// constant time. The role is the whole of RBAC: ADMIN operates the platform,
+// TRADER uses it. The FIRST account to register becomes ADMIN — a fresh install
+// has no operator until someone claims it, and demanding a pre-seeded admin is a
+// chicken-and-egg no self-hosted deploy should have to solve.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  ANALYST
+  TRADER
+  VIEWER
+}
+
+/// A person with an account. Append-analogous: we do not hard-delete a user who
+/// may own history; deactivation is a future concern, not a DELETE.
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  /// scrypt(password, salt) — NEVER the password. Encoded `salt:derivedKey`.
+  passwordHash String
+  role         UserRole @default(TRADER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  preferences UserPreferences?
+
+  @@index([email])
+}
+
+/// A user's own settings — trading defaults, notification channels, watchlist.
+///
+/// One JSON document per user rather than a column per setting, for the same
+/// reason a Strategy is a document (ADR-023): preferences evolve constantly, and a
+/// migration for every new toggle is a tax on iteration. The SHAPE is owned and
+/// validated by `@aegis/contracts`; the database just holds the blob.
+model UserPreferences {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data      Json     @default("{}")
+  updatedAt DateTime @updatedAt
+}

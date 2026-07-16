@@ -92,6 +92,16 @@ export class AppConfigService {
     };
   }
 
+  /* ── Identity & access (M16) ─────────────────────────────────────── */
+
+  get auth() {
+    return {
+      jwtSecret: this.get("JWT_SECRET"),
+      /** `JWT_EXPIRES` ("15m", "7d", "3600s", or a bare number) as seconds. */
+      jwtTtlSeconds: durationToSeconds(this.get("JWT_EXPIRES")),
+    };
+  }
+
   /* ── Live Scan (M15) ─────────────────────────────────────────────── */
 
   get scan() {
@@ -126,5 +136,30 @@ export class AppConfigService {
       anthropicKey: this.get("ANTHROPIC_API_KEY"),
       googleKey: this.get("GOOGLE_API_KEY"),
     };
+  }
+}
+
+/**
+ * Parse a duration string into seconds. Accepts a bare number (seconds), or a
+ * number suffixed with s/m/h/d. Anything unrecognised falls back to 7 days —
+ * a sane session length, never zero (which would expire every token instantly).
+ */
+function durationToSeconds(value: string): number {
+  const match = /^(\d+)\s*([smhd]?)$/.exec(value.trim());
+  if (!match) return 604_800;
+
+  const n = Number(match[1]);
+  switch (match[2]) {
+    case "s":
+    case "":
+      return n;
+    case "m":
+      return n * 60;
+    case "h":
+      return n * 3_600;
+    case "d":
+      return n * 86_400;
+    default:
+      return 604_800;
   }
 }

@@ -41,7 +41,9 @@ export const envSchema = z
 
     /* ── Security ──────────────────────────────────────────────────── */
     JWT_SECRET: secret,
-    JWT_EXPIRES: z.string().default("15m"),
+    // Session length. 7 days by default: there are no refresh tokens yet (M16), so
+    // a short access-token window would just be a re-login every few minutes.
+    JWT_EXPIRES: z.string().default("7d"),
     /** Requests per minute, per IP. */
     RATE_LIMIT: z.coerce.number().int().positive().default(120),
 

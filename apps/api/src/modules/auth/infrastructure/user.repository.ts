@@ -1,0 +1,64 @@
+import { Injectable } from "@nestjs/common";
+import type { Prisma, User as PrismaUser, UserRole } from "@prisma/client";
+
+import { PrismaService } from "../../../core/database/prisma.service";
+
+/**
+ * The one place user rows are read and written.
+ *
+ * It returns Prisma rows to the service, which maps them to the contract `User`
+ * (never the raw row — the password hash must not leak past this boundary). It
+ * owns no rules: whether the first user is an admin, whether a password is
+ * strong enough, whether a login is valid — all of that is the service's.
+ */
+@Injectable()
+export class UserRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  count(): Promise<number> {
+    return this.prisma.user.count();
+  }
+
+  findByEmail(email: string): Promise<PrismaUser | null> {
+    return this.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  }
+
+  findById(id: string): Promise<PrismaUser | null> {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+
+  create(input: {
+    email: string;
+    name: string;
+    passwordHash: string;
+    role: UserRole;
+  }): Promise<PrismaUser> {
+    return this.prisma.user.create({
+      data: {
+        email: input.email.toLowerCase(),
+        name: input.name,
+        passwordHash: input.passwordHash,
+        role: input.role,
+      },
+    });
+  }
+
+  updatePassword(id: string, passwordHash: string): Promise<PrismaUser> {
+    return this.prisma.user.update({ where: { id }, data: { passwordHash } });
+  }
+
+  /* ── Preferences ─────────────────────────────────────────────────── */
+
+  async getPreferences(userId: string): Promise<Prisma.JsonValue | null> {
+    const row = await this.prisma.userPreferences.findUnique({ where: { userId } });
+    return row?.data ?? null;
+  }
+
+  async upsertPreferences(userId: string, data: Prisma.InputJsonValue): Promise<void> {
+    await this.prisma.userPreferences.upsert({
+      where: { userId },
+      create: { userId, data },
+      update: { data },
+    });
+  }
+}

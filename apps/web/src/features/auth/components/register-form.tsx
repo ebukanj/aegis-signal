@@ -1,9 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { ApiError } from "@/lib/api";
+import { authApi } from "@/features/auth/api/auth-api";
+import { useAuthStore } from "@/features/auth/stores/auth-store";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -25,17 +29,33 @@ import {
  * authentication API ships with the backend (PRD §13.1).
  */
 export function RegisterForm() {
+  const router = useRouter();
+  const setSession = useAuthStore((s) => s.setSession);
+
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
   });
 
   async function onSubmit(values: RegisterValues) {
-    // Placeholder: replaced by the auth service integration.
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    toast.info("Account creation arrives with the backend integration.", {
-      description: `Validated registration for ${values.email}.`,
-    });
+    try {
+      const { user, accessToken } = await authApi.register({
+        name: values.name,
+        email: values.email,
+        password: values.password,
+      });
+      setSession(user, accessToken);
+      toast.success(
+        user.role === "ADMIN"
+          ? `Welcome, ${user.name}. You are the platform admin.`
+          : `Welcome, ${user.name}.`,
+      );
+      router.replace("/signals");
+    } catch (error) {
+      const message =
+        error instanceof ApiError ? error.message : "Could not create your account. Try again.";
+      toast.error(message);
+    }
   }
 
   const { isSubmitting } = form.formState;

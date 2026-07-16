@@ -9,6 +9,7 @@ import { SkipToContent } from "@/components/layout/skip-to-content";
 import { Topbar } from "@/components/layout/topbar";
 import { useUiStore } from "@/stores/ui-store";
 import { onNotification } from "@/lib/notifications-socket";
+import { AuthGate } from "@/features/auth/components/auth-gate";
 
 /**
  * Authenticated platform shell: sidebar + topbar + workspace content.
@@ -30,24 +31,26 @@ export default function PlatformLayout({
   }, []);
 
   return (
-    <SidebarProvider
-      open={!sidebarCollapsed}
-      onOpenChange={(open) => setSidebarCollapsed(!open)}
-    >
-      <SkipToContent />
-      <AppSidebar />
-      {/* min-w-0 lets inner tables scroll in place instead of widening the page */}
-      <SidebarInset className="min-w-0 overflow-x-clip">
-        <OfflineBanner />
-        <Topbar />
-        <main
-          id="main-content"
-          tabIndex={-1}
-          className="min-w-0 flex-1 p-4 md:p-6"
-        >
-          {children}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+    <AuthGate>
+      <SidebarProvider
+        open={!sidebarCollapsed}
+        onOpenChange={(open) => setSidebarCollapsed(!open)}
+      >
+        <SkipToContent />
+        <AppSidebar />
+        {/* min-w-0 lets inner tables scroll in place instead of widening the page */}
+        <SidebarInset className="min-w-0 overflow-x-clip">
+          <OfflineBanner />
+          <Topbar />
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="min-w-0 flex-1 p-4 md:p-6"
+          >
+            {children}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </AuthGate>
   );
 }

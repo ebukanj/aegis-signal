@@ -7,7 +7,15 @@
  * into a thrown `ApiError` a React Query `queryFn` can react to.
  */
 
+import { getToken } from "@/lib/auth-token";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
+/** The session bearer token, if signed in. Attached to every authed request. */
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { authorization: `Bearer ${token}` } : {};
+}
 
 export class ApiError extends Error {
   constructor(
@@ -23,7 +31,7 @@ export class ApiError extends Error {
 /** A GET against the versioned API. `path` is relative to `/api/v1`. */
 export async function apiGet<T>(path: string): Promise<T> {
   const response = await fetch(`${API_URL}/api/v1${path}`, {
-    headers: { accept: "application/json" },
+    headers: { accept: "application/json", ...authHeaders() },
   });
 
   if (!response.ok) {
@@ -62,11 +70,16 @@ function adminHeaders(): Record<string, string> {
 export async function apiSend<T>(
   path: string,
   body: unknown,
-  method: "POST" | "PATCH" | "DELETE" = "POST",
+  method: "POST" | "PUT" | "PATCH" | "DELETE" = "POST",
 ): Promise<T> {
   const response = await fetch(`${API_URL}/api/v1${path}`, {
     method,
-    headers: { accept: "application/json", "content-type": "application/json", ...adminHeaders() },
+    headers: {
+      accept: "application/json",
+      "content-type": "application/json",
+      ...authHeaders(),
+      ...adminHeaders(),
+    },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 

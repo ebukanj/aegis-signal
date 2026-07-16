@@ -76,3 +76,6 @@ export * from "./dashboard";
 
 /* ── Administration & Observability ────────────────────────────────── */
 export * from "./admin";
+
+/* ── Identity & access ─────────────────────────────────────────────── */
+export * from "./auth";

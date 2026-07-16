@@ -1,10 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ShieldAlert, ShieldCheck, Smartphone, Laptop } from "lucide-react";
 import type { SecuritySettings } from "../types";
+import { ChangePasswordCard } from "./change-password-card";
 
 export function SecuritySettingsView({ security }: { security: SecuritySettings }) {
   return (
@@ -41,26 +41,7 @@ export function SecuritySettingsView({ security }: { security: SecuritySettings 
         </Card>
       </div>
 
-      <Card className="p-6">
-        <h3 className="font-semibold mb-4 text-sm">Change Password</h3>
-        <div className="grid gap-4 md:grid-cols-2 max-w-2xl">
-          <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-medium">Current Password</label>
-            <Input type="password" placeholder="••••••••" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">New Password</label>
-            <Input type="password" placeholder="••••••••" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Confirm New Password</label>
-            <Input type="password" placeholder="••••••••" />
-          </div>
-          <div className="md:col-span-2 pt-2">
-            <Button>Update Password</Button>
-          </div>
-        </div>
-      </Card>
+      <ChangePasswordCard />
 
       <Card>
         <div className="p-4 border-b flex justify-between items-center">

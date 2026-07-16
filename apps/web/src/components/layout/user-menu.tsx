@@ -17,15 +17,35 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useAuthStore } from "@/features/auth/stores/auth-store";
 
 /**
- * Sidebar footer account menu.
- * Displays a placeholder identity until authentication is wired to the
- * backend; the menu structure and routes are final.
+ * Sidebar footer account menu — LIVE (M16). Shows the signed-in user and their
+ * role, and signs them out for real (clears the session, then to /login).
  */
 export function UserMenu() {
   const router = useRouter();
   const { isMobile } = useSidebar();
+  const user = useAuthStore((s) => s.user);
+  const signOut = useAuthStore((s) => s.signOut);
+
+  const initials = user
+    ? user.name
+        .split(" ")
+        .map((part) => part[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "AS";
+
+  const roleLabel = user
+    ? user.role.charAt(0) + user.role.slice(1).toLowerCase().replace("_", " ")
+    : null;
+
+  const handleSignOut = () => {
+    signOut();
+    router.replace("/login");
+  };
 
   return (
     <SidebarMenu>
@@ -38,13 +58,15 @@ export function UserMenu() {
             >
               <Avatar className="size-8 rounded-md">
                 <AvatarFallback className="rounded-md bg-primary/15 text-xs font-semibold text-primary">
-                  AS
+                  {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left leading-tight">
-                <span className="truncate text-sm font-medium">Trader</span>
+                <span className="truncate text-sm font-medium">
+                  {user?.name ?? "Trader"}
+                </span>
                 <span className="truncate text-xs opacity-60">
-                  Not signed in
+                  {user?.email ?? "Not signed in"}
                 </span>
               </div>
               <ChevronsUpDown className="ml-auto size-4 opacity-60" />
@@ -57,7 +79,7 @@ export function UserMenu() {
             sideOffset={8}
           >
             <DropdownMenuLabel className="text-xs text-muted-foreground">
-              Account
+              {roleLabel ? `${roleLabel} account` : "Account"}
             </DropdownMenuLabel>
             <DropdownMenuItem onSelect={() => router.push("/settings")}>
               <UserRound />
@@ -68,10 +90,7 @@ export function UserMenu() {
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={() => router.push("/login")}
-            >
+            <DropdownMenuItem variant="destructive" onSelect={handleSignOut}>
               <LogOut />
               Sign out
             </DropdownMenuItem>
