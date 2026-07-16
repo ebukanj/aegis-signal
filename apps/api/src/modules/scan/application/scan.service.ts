@@ -7,6 +7,7 @@ import { SymbolRegistry } from "../../market/domain/symbol-registry";
 import { DEFAULT_UNIVERSE, enabledExchanges } from "../../market/market.config";
 import { SignalService } from "../../signals/application/services/signal.service";
 import { SignalReadService } from "../../signals/application/read/signal-read.service";
+import { WatchlistService } from "../../auth/application/watchlist.service";
 import type { SignalCandidate } from "../../signals/domain/intake";
 import { ScanOrchestrator } from "./scan.orchestrator";
 
@@ -52,6 +53,7 @@ export class ScanService {
     private readonly registry: SymbolRegistry,
     private readonly signals: SignalService,
     private readonly read: SignalReadService,
+    private readonly watchlist: WatchlistService,
     private readonly config: AppConfigService,
   ) {}
 
@@ -66,7 +68,7 @@ export class ScanService {
     const now = Date.now();
 
     const timeframes = this.scanTimeframes(request);
-    const pairs = this.universe(request);
+    const pairs = await this.universe(request);
 
     // BTC is the correlation reference every symbol is measured against. Fetch it
     // once per sweep, from Binance, and reuse it — never per symbol.
@@ -173,13 +175,14 @@ export class ScanService {
   }
 
   /**
-   * The bounded universe: majors first (always), then whatever else the enabled
-   * exchanges list, up to the cap. Each base symbol is assigned to ONE exchange —
-   * Binance when it lists it (it has the socket and the derivatives feed), Bybit
-   * otherwise — so a symbol is never scanned twice, and Bybit-only coins still
-   * surface.
+   * The bounded universe: WATCHLISTED coins first (always — exempt from the cap,
+   * because a coin a user explicitly asked us to watch must never be dropped for
+   * budget), then the configured majors, then whatever else the enabled exchanges
+   * list, up to the cap. Each base symbol is assigned to ONE exchange — Binance
+   * when it lists it (it has the socket and the derivatives feed), Bybit otherwise
+   * — so a symbol is never scanned twice, and Bybit-only coins still surface.
    */
-  private universe(request?: ScanRequest): UniversePair[] {
+  private async universe(request?: ScanRequest): Promise<UniversePair[]> {
     const wantExchange = request?.exchange && request.exchange !== "ALL" ? request.exchange : null;
     const wantMarket = request?.market && request.market !== "ALL" ? request.market : null;
 
@@ -187,7 +190,10 @@ export class ScanService {
       .map((e) => e.id)
       .filter((id) => !wantExchange || id.toUpperCase() === wantExchange.toUpperCase());
 
-    const priority =
+    // Every coin any user watches — scanned first, and never dropped by the cap.
+    const watched = await this.watchlist.union().catch(() => [] as string[]);
+
+    const majors =
       this.config.scan.priority.length > 0 ? this.config.scan.priority : [...DEFAULT_UNIVERSE];
 
     const assigned = new Map<string, ExchangeId>();
@@ -202,13 +208,16 @@ export class ScanService {
       assigned.set(symbol, exchange);
     };
 
-    // 1 · Majors, in priority order, preferring Binance.
-    for (const symbol of priority) {
+    // 1 · Watchlisted coins, then majors — in that order, preferring Binance.
+    for (const symbol of [...watched, ...majors]) {
       for (const exchange of exchanges) consider(symbol, exchange);
     }
 
+    // The cap can never truncate the priority set: a big shared watchlist simply
+    // raises the ceiling for this sweep rather than evicting a watched coin.
+    const cap = Math.max(this.config.scan.maxSymbols, assigned.size);
+
     // 2 · Everything else the exchanges list, until the cap is reached.
-    const cap = this.config.scan.maxSymbols;
     for (const exchange of exchanges) {
       if (assigned.size >= cap) break;
       for (const ref of this.registry.marketsOn(exchange)) {
@@ -217,9 +226,7 @@ export class ScanService {
       }
     }
 
-    return [...assigned.entries()]
-      .slice(0, cap)
-      .map(([symbol, exchange]) => ({ symbol, exchange }));
+    return [...assigned.entries()].map(([symbol, exchange]) => ({ symbol, exchange }));
   }
 
   /** Fetch a symbol's closed candles for each timeframe, tolerating gaps. */

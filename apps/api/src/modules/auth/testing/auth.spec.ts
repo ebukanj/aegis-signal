@@ -5,6 +5,7 @@ import type { User as PrismaUser } from "@prisma/client";
 import { PasswordService } from "../domain/password.service";
 import { TokenService } from "../domain/token.service";
 import { AuthService } from "../application/auth.service";
+import { WatchlistService } from "../application/watchlist.service";
 import type { UserRepository } from "../infrastructure/user.repository";
 import type { AppConfigService } from "../../../config/app-config.service";
 
@@ -55,6 +56,7 @@ function fakeRepo() {
     upsertPreferences: async (uid: string, data: unknown) => {
       prefs.set(uid, data);
     },
+    allPreferences: async () => [...prefs.entries()].map(([userId, data]) => ({ userId, data })),
   } as unknown as UserRepository;
 }
 
@@ -172,5 +174,40 @@ describe("AuthService", () => {
     expect(updated.watchlist).toEqual(["BTC"]);
     // Unspecified fields keep their defaults.
     expect(updated.accountEquity).toBe(10_000);
+  });
+
+  it("manages a watchlist: add is idempotent, remove works", async () => {
+    const { user } = await auth.register({ name: "A", email: "a@x.com", password: "Passw0rd" });
+
+    expect(await auth.watchlist(user.id)).toEqual([]);
+
+    await auth.addToWatchlist(user.id, "BTC");
+    await auth.addToWatchlist(user.id, "SOL");
+    expect(await auth.addToWatchlist(user.id, "BTC")).toEqual(["BTC", "SOL"]); // no duplicate
+
+    expect(await auth.removeFromWatchlist(user.id, "BTC")).toEqual(["SOL"]);
+  });
+});
+
+describe("WatchlistService", () => {
+  it("unions every user's watched coins for the scan", async () => {
+    const repo = fakeRepo();
+    const auth = new AuthService(repo, new PasswordService(), token());
+    const watchlist = new WatchlistService(repo);
+
+    const a = await auth.register({ name: "A", email: "a@x.com", password: "Passw0rd" });
+    const b = await auth.register({ name: "B", email: "b@x.com", password: "Passw0rd" });
+
+    await auth.addToWatchlist(a.user.id, "BTC");
+    await auth.addToWatchlist(a.user.id, "ETH");
+    await auth.addToWatchlist(b.user.id, "ETH"); // overlap
+    await auth.addToWatchlist(b.user.id, "SOL");
+
+    const union = await watchlist.union();
+    expect(new Set(union)).toEqual(new Set(["BTC", "ETH", "SOL"]));
+
+    expect(new Set(await watchlist.watchersOf("ETH"))).toEqual(
+      new Set([a.user.id, b.user.id]),
+    );
   });
 });

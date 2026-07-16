@@ -112,3 +112,21 @@ export type UserPreferences = z.infer<typeof userPreferencesSchema>;
 /** A preferences update — any subset of the fields. */
 export const updatePreferencesRequestSchema = userPreferencesSchema.partial();
 export type UpdatePreferencesRequest = z.infer<typeof updatePreferencesRequestSchema>;
+
+/* ── Watchlist (M17) ───────────────────────────────────────────────── */
+
+/**
+ * A coin symbol on a watchlist — the base asset, uppercase ("BTC", "SOL"). Not a
+ * pair: a user watches an asset, and the platform scans it on whatever enabled
+ * exchange lists it.
+ */
+export const watchlistCoinSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(20)
+  .transform((s) => s.toUpperCase())
+  .pipe(z.string().regex(/^[A-Z0-9]+$/, "A coin is letters and digits only, e.g. BTC"));
+
+export const addToWatchlistRequestSchema = z.object({ coin: watchlistCoinSchema });
+export type AddToWatchlistRequest = z.infer<typeof addToWatchlistRequestSchema>;

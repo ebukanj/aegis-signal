@@ -10,6 +10,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { useTodaysSignals } from "@/features/signals/hooks/use-todays-signals";
 import { MarketContextStrip } from "@/features/signals/components/market-context-strip";
+import { WatchlistCard } from "@/features/watchlist/components/watchlist-card";
 import { NoSignals } from "@/features/signals/components/no-signals";
 import { SignalCard } from "@/features/signals/components/signal-card";
 import { SignalPanel } from "@/features/signals/components/signal-panel";
@@ -52,6 +53,8 @@ export function SignalsWorkspace() {
       />
 
       <MarketContextStrip context={context} primeCount={prime.length} />
+
+      <WatchlistCard />
 
       {/* A coin does not silently vanish. If the Risk Engine vetoed it, say so. */}
       {blockedCoins.size > 0 && (

@@ -54,6 +54,11 @@ export class UserRepository {
     return row?.data ?? null;
   }
 
+  /** Every user's preferences blob — for the watchlist union the scan reads. */
+  async allPreferences(): Promise<{ userId: string; data: Prisma.JsonValue }[]> {
+    return this.prisma.userPreferences.findMany({ select: { userId: true, data: true } });
+  }
+
   async upsertPreferences(userId: string, data: Prisma.InputJsonValue): Promise<void> {
     await this.prisma.userPreferences.upsert({
       where: { userId },

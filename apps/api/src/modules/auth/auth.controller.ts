@@ -1,17 +1,21 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
+  Param,
   Post,
   Put,
   UseGuards,
 } from "@nestjs/common";
 import {
+  addToWatchlistRequestSchema,
   changePasswordRequestSchema,
   loginRequestSchema,
   registerRequestSchema,
   updatePreferencesRequestSchema,
+  watchlistCoinSchema,
   type AuthResponse,
   type User,
   type UserPreferences,
@@ -73,5 +77,32 @@ export class AuthController {
     @Body() body: unknown,
   ): Promise<UserPreferences> {
     return this.auth.updatePreferences(userId, updatePreferencesRequestSchema.parse(body));
+  }
+
+  /* ── Watchlist ───────────────────────────────────────────────────── */
+
+  @Get("me/watchlist")
+  @UseGuards(JwtAuthGuard)
+  watchlist(@CurrentUser("sub") userId: string): Promise<string[]> {
+    return this.auth.watchlist(userId);
+  }
+
+  @Post("me/watchlist")
+  @UseGuards(JwtAuthGuard)
+  addToWatchlist(
+    @CurrentUser("sub") userId: string,
+    @Body() body: unknown,
+  ): Promise<string[]> {
+    const { coin } = addToWatchlistRequestSchema.parse(body);
+    return this.auth.addToWatchlist(userId, coin);
+  }
+
+  @Delete("me/watchlist/:coin")
+  @UseGuards(JwtAuthGuard)
+  removeFromWatchlist(
+    @CurrentUser("sub") userId: string,
+    @Param("coin") coin: string,
+  ): Promise<string[]> {
+    return this.auth.removeFromWatchlist(userId, watchlistCoinSchema.parse(coin));
   }
 }

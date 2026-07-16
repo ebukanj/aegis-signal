@@ -130,6 +130,29 @@ export class AuthService {
     return merged;
   }
 
+  /* ── Watchlist ───────────────────────────────────────────────────── */
+
+  async watchlist(userId: string): Promise<string[]> {
+    return (await this.preferences(userId)).watchlist;
+  }
+
+  /** Add a coin (idempotent, order-preserving). Returns the new watchlist. */
+  async addToWatchlist(userId: string, coin: string): Promise<string[]> {
+    const current = await this.preferences(userId);
+    if (current.watchlist.includes(coin)) return current.watchlist;
+    const next = [...current.watchlist, coin];
+    await this.updatePreferences(userId, { watchlist: next });
+    return next;
+  }
+
+  /** Remove a coin. Returns the new watchlist. */
+  async removeFromWatchlist(userId: string, coin: string): Promise<string[]> {
+    const current = await this.preferences(userId);
+    const next = current.watchlist.filter((c) => c !== coin);
+    await this.updatePreferences(userId, { watchlist: next });
+    return next;
+  }
+
   /* ── Helpers ─────────────────────────────────────────────────────── */
 
   private session(user: PrismaUser): AuthResponse {

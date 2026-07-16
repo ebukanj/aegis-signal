@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { PrismaModule } from "../../core/database/prisma.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./application/auth.service";
+import { WatchlistService } from "./application/watchlist.service";
 import { UserRepository } from "./infrastructure/user.repository";
 import { PasswordService } from "./domain/password.service";
 import { TokenService } from "./domain/token.service";
@@ -27,6 +28,7 @@ import { RolesGuard } from "./guards/roles.guard";
   controllers: [AuthController],
   providers: [
     AuthService,
+    WatchlistService,
     UserRepository,
     PasswordService,
     TokenService,
@@ -34,7 +36,8 @@ import { RolesGuard } from "./guards/roles.guard";
     RolesGuard,
   ],
   // Exported so any module can guard its routes with the platform's identity —
-  // the Admin console, user-scoped signals, the watchlist (Phase 3).
-  exports: [AuthService, TokenService, JwtAuthGuard, RolesGuard],
+  // the Admin console, user-scoped signals — and read the watchlist (the scan
+  // reads WatchlistService to scan watched coins as priority).
+  exports: [AuthService, WatchlistService, TokenService, JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}

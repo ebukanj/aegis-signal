@@ -8,6 +8,7 @@ import { RiskModule } from "../risk/risk.module";
 import { ConfidenceModule } from "../confidence/confidence.module";
 import { MarketModule } from "../market/market.module";
 import { SignalModule } from "../signals/signal.module";
+import { AuthModule } from "../auth/auth.module";
 
 import { ScanOrchestrator } from "./application/scan.orchestrator";
 import { ScanService } from "./application/scan.service";
@@ -38,6 +39,7 @@ import { ScanController } from "./scan.controller";
     ConfidenceModule,
     MarketModule,
     SignalModule,
+    AuthModule,
   ],
   controllers: [ScanController],
   providers: [ScanOrchestrator, ScanService, ScanWorker],
