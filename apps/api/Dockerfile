@@ -55,4 +55,8 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=25s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||4000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "dist/main.js"]
+# Migrations run at container start — the standard container pattern. `migrate
+# deploy` applies committed migrations only (never generates, never prompts), is
+# a no-op when the schema is current, and means a Coolify deploy is: push →
+# build → migrate → serve, with no manual step to forget.
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy --schema prisma/schema.prisma && exec node dist/main.js"]
