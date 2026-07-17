@@ -11,6 +11,7 @@ import type {
 import { AppConfigService } from "../../../config/app-config.service";
 import { QUEUE } from "../../../core/queue/queue.constants";
 import { MarketService } from "../../market/application/market.service";
+import { SymbolRegistry } from "../../market/domain/symbol-registry";
 import { SignalService } from "../../signals/application/services/signal.service";
 import { ConfidenceService } from "../../confidence/application/services/confidence.service";
 import { LedgerService } from "../../ledger/application/services/ledger.service";
@@ -51,6 +52,7 @@ export class AdminService {
     private readonly flags: FeatureFlagsService,
     private readonly maintenance: MaintenanceService,
     private readonly market: MarketService,
+    private readonly registry: SymbolRegistry,
     private readonly signals: SignalService,
     private readonly confidence: ConfidenceService,
     private readonly ledger: LedgerService,
@@ -132,6 +134,10 @@ export class AdminService {
         errorRate: h.errorRate,
         circuitOpen: h.circuitOpen,
         activeSubscriptions: h.activeSubscriptions,
+        // What the exchange actually LISTS — the number an operator means by
+        // "markets". Subscriptions are a streaming detail (zero for REST-polled
+        // Bybit) and were being misread as an empty exchange.
+        listedMarkets: this.registry.marketsOn(h.exchange).length,
       })),
     );
   }

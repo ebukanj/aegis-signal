@@ -60,7 +60,9 @@ export function toExchanges(overview: AdminOverviewDto): AdminExchange[] {
     name: e.exchange.toUpperCase(),
     status: e.circuitOpen ? "degraded" : e.connected ? "connected" : "disconnected",
     latencyMs: e.latencyMs ?? 0,
-    marketCount: e.activeSubscriptions,
+    // Listed markets, not stream subscriptions — Bybit is REST-polled (zero
+    // subscriptions by design) and read as an empty exchange under the old field.
+    marketCount: e.listedMarkets,
     lastSync: toSeconds(overview.generatedAt),
     health: e.circuitOpen ? "warning" : e.connected ? "healthy" : "critical",
   }));

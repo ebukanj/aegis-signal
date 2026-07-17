@@ -60,7 +60,14 @@ export const exchangeStatusSchema = z.object({
   latencyMs: z.number().nullable(),
   errorRate: z.number(),
   circuitOpen: z.boolean(),
+  /**
+   * Live WebSocket stream subscriptions — honestly ZERO for a REST-polled
+   * exchange (Bybit has no WS adapter). Never render this as "markets": the
+   * admin card once did, and a healthy Bybit read as an empty exchange.
+   */
   activeSubscriptions: z.number().int().nonnegative(),
+  /** Markets this exchange actually lists in the symbol registry. */
+  listedMarkets: z.number().int().nonnegative().default(0),
 });
 export type ExchangeStatusDto = z.infer<typeof exchangeStatusSchema>;
 
