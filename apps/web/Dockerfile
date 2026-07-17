@@ -45,10 +45,11 @@ RUN apk add --no-cache dumb-init \
   && adduser -S aegis -G aegis
 
 # Standalone output is self-contained: server.js + the traced node_modules.
-# Static assets and public/ are served by the same server and copied alongside.
+# Static assets are served by the same server and copied alongside. There is no
+# `public/` directory in this app (Next 15 app-router assets live under app/);
+# if one is ever added, it needs a COPY line here too.
 COPY --from=build --chown=aegis:aegis /app/apps/web/.next/standalone ./
 COPY --from=build --chown=aegis:aegis /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=build --chown=aegis:aegis /app/apps/web/public ./apps/web/public
 
 USER aegis
 
