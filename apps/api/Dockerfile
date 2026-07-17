@@ -28,7 +28,11 @@ RUN pnpm --filter @aegis/api exec prisma generate
 RUN pnpm --filter @aegis/api build
 
 # Production dependency tree only — dev tooling has no business in a prod image.
-RUN pnpm --filter @aegis/api --prod deploy /app/pruned
+# `--legacy`: pnpm v10 changed `deploy` to demand injected workspace packages;
+# the legacy mode is the v9 behaviour this image was designed around — the
+# workspace dep (@aegis/contracts, already built above) is COPIED into the
+# pruned node_modules, which is precisely what a self-contained image wants.
+RUN pnpm --filter @aegis/api --prod deploy --legacy /app/pruned
 
 # ── runtime ──────────────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
