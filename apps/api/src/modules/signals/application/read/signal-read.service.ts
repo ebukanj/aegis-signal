@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { OnEvent } from "@nestjs/event-emitter";
 import type {
   MarketRegime,
   Opportunity,
@@ -34,6 +35,33 @@ export interface SignalFeed {
 @Injectable()
 export class SignalReadService {
   constructor(private readonly repository: SignalRepository) {}
+
+  /**
+   * The most recent sweep's REAL coverage, carried here by the `scan.completed`
+   * event — the Signals header shows these numbers. An event rather than a call,
+   * because signals must never depend on the scan module (the scan depends on
+   * signals). Before the first sweep of this process finishes, the honest values
+   * are zeros and the boot time: the platform HAS scanned nothing yet, and saying
+   * so beats deriving fake coverage from whatever happens to be published.
+   */
+  private lastSweep = {
+    pairsChecked: 0,
+    exchanges: 0,
+    scannedAt: new Date().toISOString(),
+  };
+
+  @OnEvent("scan.completed")
+  onScanCompleted(diagnostics: {
+    pairsChecked: number;
+    exchanges: number;
+    scannedAt: string;
+  }): void {
+    this.lastSweep = {
+      pairsChecked: diagnostics.pairsChecked,
+      exchanges: diagnostics.exchanges,
+      scannedAt: diagnostics.scannedAt,
+    };
+  }
 
   /**
    * The feed — the platform's published signals, newest first.
@@ -72,10 +100,13 @@ export class SignalReadService {
       context: {
         regime: dominantRegime(signals.map((s) => s.regime)),
         riskLevel: dominantRisk(opportunities.map((o) => o.riskLevel)),
-        pairsScanned: new Set(signals.map((s) => s.symbol)).size,
-        exchanges: new Set(signals.map((s) => s.exchange)).size,
+        // Real sweep coverage (scan.completed) — not derived from what happens
+        // to be published, which read "0 pairs across 0 exchanges" the moment
+        // the feed was honestly empty.
+        pairsScanned: this.lastSweep.pairsChecked,
+        exchanges: this.lastSweep.exchanges,
         strategiesActive: new Set(signals.flatMap((s) => s.strategies)).size,
-        lastScanAt: new Date(now).toISOString(),
+        lastScanAt: this.lastSweep.scannedAt,
         published: signals.length,
       },
       prime: opportunities.filter((o) => o.isPrime),

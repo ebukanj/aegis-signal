@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Candle, ExchangeId, ScanRequest, ScanResult, Timeframe } from "@aegis/contracts";
 
 import { AppConfigService } from "../../../config/app-config.service";
@@ -59,6 +60,7 @@ export class ScanService {
     private readonly read: SignalReadService,
     private readonly watchlist: WatchlistService,
     private readonly config: AppConfigService,
+    private readonly events: EventEmitter2,
   ) {}
 
   /* ── The background sweep (the worker calls this) ─────────────────── */
@@ -168,6 +170,10 @@ export class ScanService {
     };
 
     this.last = diagnostics;
+
+    /* The Signals feed shows these numbers in its header. Emitted rather than
+     * called: signals must never depend on the scan module (scan depends on it). */
+    this.events.emit("scan.completed", diagnostics);
 
     this.logger.log(
       `Scan: ${checked} pairs checked · ${all.length} passed · ${diagnostics.durationMs}ms`,
